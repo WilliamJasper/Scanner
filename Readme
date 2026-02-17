@@ -35,10 +35,3 @@ DELETE FROM dbo.Bills;
 DBCC CHECKIDENT ('dbo.Bills', RESEED, 0);
 
 
-cd "C:\Users\Asus\OneDrive\Desktop\เอกสหกรุ๊ป\ScannerTTB\ScannerTTB (2)"
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/WilliamJasper/ScannerTTB.git
-git push -u origin main
