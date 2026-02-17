@@ -1,0 +1,3308 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScannerTTB - Bill For Collection Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Noto Sans Thai', sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            /* Light grey - clean minimal background */
+            color: #334155;
+        }
+
+        /* Override text colors for better contrast */
+        .text-slate-500 {
+            color: #475569 !important;
+        }
+
+        /* Actually Slate-600 */
+        .text-slate-400 {
+            color: #64748b !important;
+        }
+
+        /* Actually Slate-500 */
+        .text-gray-400 {
+            color: #6b7280 !important;
+        }
+
+        /* Gray-500 */
+
+        .header-bg {
+            background-color: #1e293b;
+            /* Slate-900 for header only */
+        }
+
+        .card-white {
+            background: white;
+            border-radius: 1.5rem;
+            /* 3xl */
+            box-shadow: 0 20px 60px -15px rgba(99, 102, 241, 0.2);
+            /* Soft Indigo Shadow */
+            border: 1px solid #f1f5f9;
+        }
+
+        /* Update card-glass to be compatible with white theme (or use card-white) */
+        .card-glass {
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+
+
+
+        /* Tab Transitions */
+        .tab-content {
+            display: none;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateY(10px) scale(0.98);
+        }
+
+        .tab-content.active-tab {
+            display: block;
+        }
+
+        .tab-content.show-tab {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Page switch smooth transition */
+        .page-content {
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        .page-content.page-visible {
+            opacity: 1;
+        }
+
+        .upload-zone {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: white;
+        }
+
+        .upload-zone:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 50px -12px rgba(147, 51, 234, 0.2);
+            border-color: #a78bfa;
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-scan:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-scan:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #cbd5e1;
+            box-shadow: none;
+        }
+
+        /* New Badges */
+        .hero-badge {
+            background: #ffffff;
+            color: #4f46e5;
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            border: 1px solid #e0e7ff;
+            box-shadow: 0 4px 15px -3px rgba(99, 102, 241, 0.1);
+        }
+
+        .hero-dot {
+            height: 0.5rem;
+            width: 0.5rem;
+            background-color: #6366f1;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .text-gradient-hero {
+            background: linear-gradient(to right, #4f46e5, #9333ea);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            display: inline-block;
+        }
+
+        /* Animations */
+        .pulse-ring {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Scrollbar */
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Status colors optimization for light theme */
+        .status-closed {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+        }
+
+        .status-active {
+            background: #f0fdf4;
+            color: #22c55e;
+            border: 1px solid #bbf7d0;
+        }
+
+        .tab-btn {
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: #eef2ff;
+            border-color: #6366f1;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            transition: width 0.5s ease;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* New table styles */
+        .modern-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .modern-table th,
+        .modern-table td {
+            padding: 1rem 1.5rem;
+            vertical-align: middle;
+        }
+
+        .modern-table thead th {
+            background-color: #f8fafc;
+            /* Slate-50 */
+            color: #475569;
+            /* Slate-600 */
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e2e8f0;
+            /* Slate-200 */
+        }
+
+        .modern-table tbody tr:hover {
+            background-color: #f8fafc;
+            /* Slate-50 */
+        }
+
+        .modern-table tbody td {
+            color: #334155;
+            /* Slate-700 */
+            border-bottom: 1px solid #f1f5f9;
+            /* Slate-100 */
+        }
+
+        .modern-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .modern-table th:first-child,
+        .modern-table td:first-child {
+            border-top-left-radius: 0.75rem;
+            border-bottom-left-radius: 0.75rem;
+        }
+
+        .modern-table th:last-child,
+        .modern-table td:last-child {
+            border-top-right-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        /* Top Nav Bar */
+        .top-nav {
+            background: #1e293b;
+            color: white;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        .top-nav-item {
+            transition: all 0.2s ease;
+            border-radius: 0.5rem;
+        }
+        .top-nav-item:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .top-nav-item.active {
+            background: #7c3aed;
+            color: white;
+        }
+        .top-menu-button {
+            background: #334155;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            border-radius: 0.75rem;
+            transition: all 0.2s ease;
+        }
+        .top-menu-button:hover {
+            background: #3f4f65;
+        }
+        .top-menu-list {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 0.5rem);
+            min-width: 220px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 0.4rem;
+            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.45);
+            display: none;
+            z-index: 60;
+        }
+        .top-menu-list.show {
+            display: block;
+        }
+        .top-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.55rem;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        .top-menu-item .menu-icon {
+            flex-shrink: 0;
+            width: 1.1rem;
+            height: 1.1rem;
+            opacity: 0.9;
+        }
+        .top-menu-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #f8fafc;
+        }
+
+        .ambient-blob {
+            position: absolute;
+            border-radius: 9999px;
+            filter: blur(50px);
+            opacity: 0.45;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .chip-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            padding: 0.35rem 0.7rem;
+            box-shadow: 0 4px 12px -8px rgba(15, 23, 42, 0.2);
+        }
+
+        .upload-icon-shell {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-icon-shell::before {
+            content: "";
+            position: absolute;
+            inset: -10px;
+            border-radius: 1.25rem;
+            background: radial-gradient(circle, rgba(167, 139, 250, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+            animation: pulse-ring 2.6s ease-in-out infinite;
+        }
+
+        .tax-upload-zone:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 45px -15px rgba(245, 158, 11, 0.28);
+            border-color: #f59e0b;
+        }
+
+        .btn-tax-scan {
+            background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.28);
+        }
+
+        .btn-tax-scan:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(20, 184, 166, 0.35);
+        }
+
+        .btn-tax-scan:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #cbd5e1;
+            box-shadow: none;
+        }
+
+        .tax-ocr-view table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+        .tax-ocr-view th,
+        .tax-ocr-view td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 10px;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .tax-ocr-view p {
+            margin: 6px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+    <div class="flex flex-col min-h-screen">
+        <!-- Top Nav Bar -->
+        <header id="topNav" class="top-nav px-4 py-3">
+            <div class="w-full max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+                <div id="topMenuWrapper" class="relative ml-auto mr-0">
+                    <button id="topMenuButton" type="button" onclick="toggleTopMenu(event)"
+                        class="top-menu-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium">
+                        <span id="topMenuLabel">ScannerTBB</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="topMenuList" class="top-menu-list">
+                        <a href="#" onclick="switchPage('scanner'); return false;" data-page="scanner"
+                            class="top-menu-item top-nav-item active">
+                            <svg class="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            ScannerTBB
+                        </a>
+                        <a href="#" onclick="switchPage('tax'); return false;" data-page="tax"
+                            class="top-menu-item top-nav-item">
+                            <svg class="menu-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                            </svg>
+                            TAX INVOICE
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col items-center min-h-0 bg-slate-100 overflow-auto">
+    <main id="mainContent" class="flex-1 flex flex-col items-center justify-center px-6 py-12 w-full max-w-7xl mx-auto min-h-[calc(100vh-4rem)]">
+        <!-- Page: ScannerTTB -->
+        <div id="pageScannerTTB" class="page-content page-visible w-full flex flex-col items-center">
+        <!-- Hero & Upload Section - Centered Layout -->
+        <div id="uploadSection" class="relative w-full max-w-2xl mx-auto flex flex-col items-center text-center overflow-visible">
+            <div class="ambient-blob w-40 h-40 -top-8 -left-8 bg-indigo-200/70"></div>
+            <div class="ambient-blob w-44 h-44 top-20 -right-10 bg-violet-200/70"></div>
+            <!-- Top Badge -->
+            <div class="relative z-10 inline-flex items-center gap-2 text-sm text-slate-600 mb-6">
+                <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                พร้อมใช้งานระบบ AI รุ่นใหม่ล่าสุด
+            </div>
+
+            <!-- Title -->
+            <h2 class="relative z-10 text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight mb-4">
+                อัปโหลดเอกสาร <span class="text-purple-600">Bill For Collection</span>
+            </h2>
+
+            <!-- Description -->
+            <p class="relative z-10 text-slate-500 text-base lg:text-lg mb-6 max-w-xl">
+                ระบบอัจฉริยะที่จะช่วยวิเคราะห์และตรวจสอบความถูกต้องของเอกสารเงินกู้ ด้วยเทคโนโลยี Typhoon AI ที่แม่นยำที่สุด
+            </p>
+
+            <div class="relative z-10 mb-8 flex flex-wrap justify-center gap-2">
+                <span class="chip-pill">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                    PDF Only
+                </span>
+                <span class="chip-pill">
+                    <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+                    AI Verify
+                </span>
+                <span class="chip-pill">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Auto Export
+                </span>
+            </div>
+
+            <!-- Upload Card -->
+            <div class="relative z-10 w-full">
+                <div id="dropZone"
+                    class="bg-white/95 rounded-2xl p-12 text-center cursor-pointer upload-zone border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-300"
+                    onclick="document.getElementById('fileInput').click()">
+
+                    <input type="file" id="fileInput" accept=".pdf" class="hidden"
+                        onchange="handleFileSelect(event)">
+
+                    <!-- Cloud + Document Icon -->
+                    <div id="uploadIcon" class="mb-6 upload-icon-shell animate-float" style="animation-duration: 4.5s;">
+                        <svg class="w-20 h-20 text-purple-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                            </path>
+                        </svg>
+                        <div class="absolute -top-1 -right-1 w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div id="uploadText" class="relative z-10">
+                        <p class="text-lg text-slate-700 mb-2">
+                            ลากไฟล์มาวาง หรือ <span class="text-blue-500 underline cursor-pointer hover:text-blue-600">คลิกเพื่อเลือกไฟล์</span>
+                        </p>
+                        <p class="text-sm text-slate-400">รองรับไฟล์ PDF (ขนาดไม่เกิน 20MB)</p>
+                    </div>
+
+                        <!-- File Info -->
+                        <!-- File Info (Redesigned) -->
+                        <div id="fileInfo"
+                            class="hidden relative z-10 mt-6 bg-white rounded-2xl p-2 border border-indigo-100 w-full animate-fadeInUp shadow-lg shadow-indigo-100/50">
+                            <div class="flex items-center gap-4 p-4">
+                                <div
+                                    class="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0 border border-indigo-100 relative overflow-hidden group">
+                                    <div
+                                        class="absolute inset-0 bg-indigo-100 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                                    </div>
+                                    <svg class="w-7 h-7 text-indigo-500 relative z-10" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <p class="text-xs font-bold text-indigo-500 uppercase tracking-wider">พร้อมสแกน
+                                        </p>
+                                        <span id="fileSize"
+                                            class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full"></span>
+                                    </div>
+                                    <p id="fileName" class="text-slate-800 font-bold text-base truncate"></p>
+                                </div>
+                            </div>
+                            <div
+                                class="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-xl border-t border-slate-100">
+                                <button onclick="event.stopPropagation(); clearFile()"
+                                    class="text-xs text-red-500 hover:text-red-700 font-bold py-1 px-2 rounded hover:bg-red-50 transition-colors flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                        </path>
+                                    </svg>
+                                    เปลี่ยนไฟล์
+                                </button>
+                                <button id="manualPasswordBtn" onclick="event.stopPropagation(); forceShowPassword()"
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-bold hidden flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                                        </path>
+                                    </svg>
+                                    ใส่รหัสผ่าน
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Options Section (Integrated under card) -->
+                    <div id="optionsSection" class="hidden mt-6 space-y-4 animate-fadeInUp">
+                        <!-- Password Input -->
+                        <div id="passwordSection"
+                            class="hidden card-white rounded-xl p-5 border border-amber-200 bg-amber-50">
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                                        </path>
+                                    </svg>
+                                    <span id="passwordLabel"
+                                        class="text-amber-800 font-medium text-sm">ไฟล์นี้มีรหัสผ่าน</span>
+                                </div>
+                                <p id="passwordHint" class="text-amber-600/80 text-xs ml-6">
+                                    กรุณาใส่รหัสผ่านเพื่อเปิดไฟล์ PDF นี้</p>
+                                <div class="flex items-center gap-2">
+                                    <input type="password" id="pdfPassword" placeholder="ใส่รหัสผ่าน..."
+                                        class="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-slate-800 text-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                                    <button onclick="togglePasswordVisibility()" type="button"
+                                        class="p-2 rounded-lg border border-amber-200 text-amber-500 hover:bg-amber-100 transition-colors">
+                                        <svg id="eyeIcon" class="w-4 h-4" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Page Limit -->
+                        <!-- Page Limit (Improved) -->
+                        <div
+                            class="card-white rounded-xl p-4 border border-slate-200 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-slate-100 rounded-lg text-slate-500">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-slate-800 text-sm font-bold">จำกัดหน้าสแกน (Optional)</p>
+                                    <p class="text-[10px] text-slate-400">ระบุจำนวนหน้าหรือปล่อยว่าง</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="maxPages" min="0" placeholder="-"
+                                    class="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-slate-800 text-center text-sm focus:outline-none focus:border-indigo-500 font-bold">
+                            </div>
+                        </div>
+
+                        <!-- Features Grid (New) -->
+                        <div class="mt-4 grid grid-cols-3 gap-3">
+                            <div
+                                class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center group hover:border-indigo-200 transition-colors">
+                                <div
+                                    class="w-8 h-8 mx-auto bg-white rounded-lg shadow-sm flex items-center justify-center text-indigo-500 mb-2 group-hover:scale-110 transition-transform">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-[10px] font-bold text-slate-700">AI Powered</p>
+                            </div>
+                            <div
+                                class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center group hover:border-emerald-200 transition-colors">
+                                <div
+                                    class="w-8 h-8 mx-auto bg-white rounded-lg shadow-sm flex items-center justify-center text-emerald-500 mb-2 group-hover:scale-110 transition-transform">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-[10px] font-bold text-slate-700">ตรวจสอบ</p>
+                            </div>
+                            <div
+                                class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center group hover:border-amber-200 transition-colors">
+                                <div
+                                    class="w-8 h-8 mx-auto bg-white rounded-lg shadow-sm flex items-center justify-center text-amber-500 mb-2 group-hover:scale-110 transition-transform">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-[10px] font-bold text-slate-700">Excel Export</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scan Button -->
+                    <div class="mt-8">
+                        <button id="scanBtn" onclick="startScan()" disabled
+                            class="btn-scan w-full py-4 rounded-xl text-white font-bold text-lg shadow-xl shadow-indigo-500/20 inline-flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            เริ่มสแกนเอกสาร
+                        </button>
+                    </div>
+                </div>
+
+            <!-- Footer Stats -->
+            <div class="mt-12 w-full max-w-2xl mx-auto">
+                <div
+                    class="rounded-2xl bg-white/70 border border-slate-200/80 shadow-sm backdrop-blur-sm px-4 py-5 md:px-6 md:py-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 text-center">
+                        <div class="md:border-r md:border-slate-200 md:pr-6">
+                            <div class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.586-3.586a2 2 0 010 2.828l-8.172 8.172a4 4 0 01-5.656 0l-2.172-2.172a4 4 0 010-5.656L12.758 2.93a2 2 0 012.828 0l4 4z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <p class="font-bold text-slate-800 text-sm">ความแม่นยำสูง</p>
+                            <p class="text-slate-500 text-sm mt-1">99.8% Accuracy</p>
+                        </div>
+                        <div class="md:border-r md:border-slate-200 md:px-6">
+                            <div class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-violet-50 text-violet-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <p class="font-bold text-slate-800 text-sm">ประมวลผลไว</p>
+                            <p class="text-slate-500 text-sm mt-1">&lt; 3 วินาที/หน้า</p>
+                        </div>
+                        <div class="md:pl-6">
+                            <div class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 mb-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 11c0 1.657-1.567 3-3.5 3S5 12.657 5 11s1.567-3 3.5-3S12 9.343 12 11zm0 0V9a3 3 0 116 0v2m-6 0v2a3 3 0 106 0v-2m-6 0h6">
+                                    </path>
+                                </svg>
+                            </div>
+                            <p class="font-bold text-slate-800 text-sm">ปลอดภัย</p>
+                            <p class="text-slate-500 text-sm mt-1">Enterprise Grade</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-5 text-center tracking-wide">ScannerTTB v1.0 - Built with FastAPI + Typhoon AI</p>
+            </div>
+        </div>
+
+        <!-- Loading Section (Stepper Animation) -->
+        <div id="loadingSection"
+            class="hidden min-h-[60vh] flex flex-col items-center justify-center fade-in max-w-5xl mx-auto px-6 w-full">
+
+            <!-- Stepper Container -->
+            <div class="w-full max-w-4xl mb-20 relative px-4 md:px-0">
+                <!-- Lines -->
+                <div class="hidden md:block absolute top-[1.8rem] left-0 w-full h-1 bg-slate-100 rounded-full z-0">
+                </div>
+                <div id="stepperProgressLine"
+                    class="hidden md:block absolute top-[1.8rem] left-0 h-1 bg-gradient-to-r from-emerald-400 to-indigo-500 rounded-full z-0 transition-all duration-700 ease-out"
+                    style="width: 0%"></div>
+
+                <!-- Steps -->
+                <div class="relative z-10 flex flex-col md:flex-row justify-between w-full gap-6 md:gap-0">
+
+                    <!-- Step 1: Upload -->
+                    <div id="step-1" class="step-item flex flex-row md:flex-col items-center gap-4 group md:w-32">
+                        <div
+                            class="step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                            <svg class="w-6 h-6 text-slate-400 transition-colors duration-300 step-icon" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                </path>
+                            </svg>
+                            <div
+                                class="step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="text-left md:text-center">
+                            <p
+                                class="font-bold text-slate-800 text-sm mb-0 md:mb-1 transition-colors duration-300 step-label">
+                                อัปโหลด</p>
+                            <p
+                                class="step-status text-xs text-indigo-500 font-medium opacity-0 transition-opacity duration-300">
+                                รอสักครู่...</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Read PDF -->
+                    <div id="step-2" class="step-item flex flex-row md:flex-col items-center gap-4 group md:w-32">
+                        <div
+                            class="step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                            <svg class="w-6 h-6 text-slate-400 transition-colors duration-300 step-icon" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            <div
+                                class="step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="text-left md:text-center">
+                            <p
+                                class="font-bold text-slate-400 text-sm mb-0 md:mb-1 transition-colors duration-300 step-label">
+                                อ่านไฟล์ PDF</p>
+                            <p
+                                class="step-status text-xs text-indigo-500 font-medium opacity-0 transition-opacity duration-300">
+                                Processing...</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: AI Analysis -->
+                    <div id="step-3" class="step-item flex flex-row md:flex-col items-center gap-4 group md:w-32">
+                        <div
+                            class="step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                            <svg class="w-6 h-6 text-slate-400 transition-colors duration-300 step-icon" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
+                                </path>
+                            </svg>
+                            <div
+                                class="step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="text-left md:text-center">
+                            <p
+                                class="font-bold text-slate-400 text-sm mb-0 md:mb-1 transition-colors duration-300 step-label">
+                                วิเคราะห์ AI</p>
+                            <p
+                                class="step-status text-xs text-indigo-500 font-medium opacity-0 transition-opacity duration-300">
+                                Analyzing...</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Verification -->
+                    <div id="step-4" class="step-item flex flex-row md:flex-col items-center gap-4 group md:w-32">
+                        <div
+                            class="step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                            <svg class="w-6 h-6 text-slate-400 transition-colors duration-300 step-icon" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div
+                                class="step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="text-left md:text-center">
+                            <p
+                                class="font-bold text-slate-400 text-sm mb-0 md:mb-1 transition-colors duration-300 step-label">
+                                ตรวจสอบ</p>
+                            <p
+                                class="step-status text-xs text-indigo-500 font-medium opacity-0 transition-opacity duration-300">
+                                Verifying...</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Main Indicator -->
+            <div class="text-center space-y-6 animate-fadeInUp">
+                <div class="relative inline-block">
+                    <div class="w-16 h-16 border-[3px] border-indigo-100 border-t-indigo-500 rounded-full animate-spin">
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span id="loadingPercent" class="text-xs font-bold text-indigo-600">0%</span>
+                    </div>
+                </div>
+                <div>
+                    <h3 id="loadingStatusMain" class="text-3xl font-bold text-slate-800 mb-2 tracking-tight">
+                        กำลังเตรียมพร้อม...</h3>
+                    <p class="text-slate-500 animate-pulse font-light">Typhoon AI กำลังเริ่มทำงาน</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden fade-in">
+            <!-- Tab Navigation -->
+            <div
+                class="flex flex-wrap items-center gap-2 mb-8 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm sticky top-4 z-20">
+                <button onclick="switchTab('overview')"
+                    class="tab-btn flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 text-slate-500 hover:bg-slate-50 border border-transparent data-[active=true]:bg-indigo-50 data-[active=true]:text-indigo-600 data-[active=true]:border-indigo-100 data-[active=true]:shadow-sm"
+                    data-tab="overview" data-active="true">
+                    ภาพรวม
+                </button>
+                <button onclick="switchTab('details')"
+                    class="tab-btn flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 text-slate-500 hover:bg-slate-50 border border-transparent data-[active=true]:bg-indigo-50 data-[active=true]:text-indigo-600 data-[active=true]:border-indigo-100 data-[active=true]:shadow-sm"
+                    data-tab="details">
+                    รายละเอียด
+                </button>
+                <button onclick="switchTab('verification')"
+                    class="tab-btn flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 text-slate-500 hover:bg-slate-50 border border-transparent data-[active=true]:bg-indigo-50 data-[active=true]:text-indigo-600 data-[active=true]:border-indigo-100 data-[active=true]:shadow-sm"
+                    data-tab="verification">
+                    ตรวจสอบ
+                </button>
+                <button onclick="switchTab('document-view')"
+                    class="tab-btn flex-1 py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 text-slate-500 hover:bg-slate-50 border border-transparent data-[active=true]:bg-indigo-50 data-[active=true]:text-indigo-600 data-[active=true]:border-indigo-100 data-[active=true]:shadow-sm"
+                    data-tab="document-view">
+                    เอกสาร (A4)
+                </button>
+
+                <div class="w-px h-8 bg-slate-200 mx-2 hidden md:block"></div>
+
+                <button id="importBtn" onclick="importToDatabase()" disabled
+                    class="hidden px-4 py-2.5 rounded-xl border border-indigo-100 bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 transition-all flex items-center gap-2 whitespace-nowrap shadow-lg shadow-indigo-600/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4">
+                        </path>
+                    </svg>
+                    Import Database
+                </button>
+
+                <button onclick="resetAll()"
+                    class="px-4 py-2.5 rounded-xl border border-red-100 bg-red-50 text-sm font-medium text-red-600 hover:bg-red-100 hover:border-red-200 transition-all flex items-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                    สแกนใหม่
+                </button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div id="tab-overview" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                    <!-- Bill Number -->
+                    <div
+                        class="card-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
+                        <div>
+                            <p class="text-slate-600 text-xs font-semibold mb-1 uppercase tracking-wide">เลขที่ Bill</p>
+                            <p id="billNumber" class="text-lg font-bold text-slate-900 break-all">-</p>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-lg flex-shrink-0 text-slate-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Date -->
+                    <div
+                        class="card-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
+                        <div>
+                            <p class="text-slate-600 text-xs font-semibold mb-1 uppercase tracking-wide">วันที่</p>
+                            <p id="billDate" class="text-lg font-bold text-slate-900">-</p>
+                        </div>
+                        <div class="p-2 bg-slate-100 rounded-lg flex-shrink-0 text-slate-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Total Items -->
+                    <div
+                        class="card-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
+                        <div>
+                            <p class="text-slate-600 text-xs font-semibold mb-1 uppercase tracking-wide">จำนวนรายการ</p>
+                            <p id="totalItems" class="text-lg font-bold text-indigo-700">-</p>
+                        </div>
+                        <div class="p-2 bg-indigo-50 rounded-lg flex-shrink-0 text-indigo-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                                </path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Total Amount -->
+                    <div
+                        class="card-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
+                        <div>
+                            <p class="text-slate-600 text-xs font-semibold mb-1 uppercase tracking-wide">ยอดรวม (คำนวณ)
+                            </p>
+                            <p id="totalAmount" class="text-lg font-bold text-emerald-700">-</p>
+                        </div>
+                        <div class="p-2 bg-emerald-50 rounded-lg flex-shrink-0 text-emerald-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                                </path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Pages Info -->
+                    <div
+                        class="card-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start justify-between hover:shadow-md transition-shadow">
+                        <div>
+                            <p class="text-slate-600 text-xs font-semibold mb-1 uppercase tracking-wide">หน้าที่ประมวลผล
+                            </p>
+                            <p id="pagesInfo" class="text-lg font-bold text-amber-600">-</p>
+                        </div>
+                        <div class="p-2 bg-amber-50 rounded-lg flex-shrink-0 text-amber-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Customer Info Card -->
+                    <div
+                        class="card-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden relative group">
+                        <div class="h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+                        <div class="p-8">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800">ข้อมูลลูกค้า</h3>
+                                    <p class="text-slate-500 text-sm">Customer Information</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-5">
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <span
+                                        class="text-slate-500 text-xs font-semibold uppercase tracking-wider block mb-1">ชื่อลูกค้า</span>
+                                    <p id="customerName" class="text-slate-900 font-medium text-lg leading-relaxed">-
+                                    </p>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                        <span
+                                            class="text-slate-500 text-xs font-semibold uppercase tracking-wider block mb-1">ที่อยู่</span>
+                                        <p id="customerAddress" class="text-slate-800 text-sm leading-relaxed">-</p>
+                                    </div>
+                                    <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                                        <span
+                                            class="text-indigo-600 text-xs font-semibold uppercase tracking-wider block mb-1">Credit
+                                            Line No.</span>
+                                        <p id="creditLineNo" class="text-indigo-900 font-mono font-bold text-lg">-</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reference Info Card -->
+                    <div
+                        class="card-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden relative group">
+                        <div class="h-2 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+                        <div class="p-8">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div
+                                    class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800">ข้อมูลอ้างอิง</h3>
+                                    <p class="text-slate-500 text-sm">Reference Details</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <span class="text-slate-500 text-xs block mb-1">Ref 1</span>
+                                        <p id="ref1" class="text-slate-900 font-mono font-medium truncate">-</p>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <span class="text-slate-500 text-xs block mb-1">Ref 2</span>
+                                        <p id="ref2" class="text-slate-900 font-mono font-medium truncate">-</p>
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center gap-3">
+                                    <div class="p-2 bg-white rounded-lg shadow-sm">
+                                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-500 text-xs block">ธนาคาร</span>
+                                        <p id="bankName" class="text-slate-900 font-medium">-</p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 pt-2">
+                                    <div
+                                        class="bg-red-50 rounded-xl p-4 text-center border border-red-100 hover:shadow-md transition-shadow cursor-default">
+                                        <p class="text-red-500 text-3xl font-black" id="closedCount">-</p>
+                                        <p class="text-red-400 text-xs font-semibold uppercase tracking-wider mt-1">
+                                            Closed</p>
+                                    </div>
+                                    <div
+                                        class="bg-emerald-50 rounded-xl p-4 text-center border border-emerald-100 hover:shadow-md transition-shadow cursor-default">
+                                        <p class="text-emerald-500 text-3xl font-black" id="activeCount">-</p>
+                                        <p class="text-emerald-400 text-xs font-semibold uppercase tracking-wider mt-1">
+                                            Active</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details Tab -->
+            <div id="tab-details" class="tab-content">
+                <div class="card-white rounded-2xl overflow-hidden border border-slate-200 shadow-lg">
+                    <div
+                        class="p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4 bg-slate-50/50">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                                    </path>
+                                </svg>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-lg">รายการทั้งหมด</h3>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="relative">
+                                <input type="text" id="searchInput" oninput="filterTable()"
+                                    placeholder="ค้นหาเลขตัวถัง..."
+                                    class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all w-64 shadow-sm">
+                                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <select id="pageFilter" onchange="filterTable()"
+                                class="border border-slate-200 bg-white rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 hover:border-indigo-300 shadow-sm transition-all cursor-pointer">
+                                <option value="all">ทุกหน้า</option>
+                            </select>
+                            <select id="statusFilter" onchange="filterTable()"
+                                class="border border-slate-200 bg-white rounded-xl px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 hover:border-indigo-300 shadow-sm transition-all cursor-pointer">
+                                <option value="all">ทุกสถานะ</option>
+                                <option value="Closed">Closed</option>
+                                <option value="Active">Active</option>
+                            </select>
+                            <button onclick="exportToExcel()"
+                                class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                Export Excel
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Modern Table Container (Per Page) -->
+                    <div id="itemsByPageContainer" class="space-y-6">
+                        <!-- JS will populate tables here -->
+                    </div>
+                    <!-- Pagination -->
+                    <div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-sm text-slate-500">แสดง <span id="showingCount"
+                                class="font-medium text-slate-900">0</span> รายการ</span>
+                        <!-- Minimal pagination could go here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification Tab -->
+            <!-- Verification Tab -->
+            <div id="tab-verification" class="tab-content">
+                <div class="card-white p-8 rounded-2xl border border-slate-200 shadow-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+                        <!-- Left: Score Circle -->
+                        <div class="text-center relative flex justify-center">
+                            <div class="relative inline-block">
+                                <svg class="w-48 h-48 transform -rotate-90">
+                                    <circle cx="96" cy="96" r="88" stroke="#f1f5f9" stroke-width="12" fill="none" />
+                                    <circle id="scoreRing" cx="96" cy="96" r="88" stroke="currentColor"
+                                        stroke-width="12" fill="none" stroke-dasharray="552.9" stroke-dashoffset="552.9"
+                                        class="text-indigo-600 transition-all duration-1000 ease-out" />
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span class="text-5xl font-black text-slate-800 tracking-tighter"
+                                        id="completenessPercent">0%</span>
+                                    <span
+                                        class="text-sm font-medium text-slate-400 uppercase tracking-widest mt-1">Completeness</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Details -->
+                        <div class="md:col-span-2 space-y-6">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 mb-2">ผลการตรวจสอบเอกสาร</h3>
+                                <p class="text-slate-500 text-sm">ระบบได้ทำการตรวจสอบความสมบูรณ์ของข้อมูลเบื้องต้นจาก
+                                    Typhoon AI</p>
+                            </div>
+
+                            <!-- Notes Box -->
+                            <div class="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100">
+                                <h4 class="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    หมายเหตุ
+                                </h4>
+                                <p id="verificationNotes" class="text-indigo-800/80 text-sm leading-relaxed">-</p>
+                            </div>
+
+                            <!-- Issues List -->
+                            <div class="space-y-3">
+                                <h4 class="font-semibold text-slate-700 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z">
+                                        </path>
+                                    </svg>
+                                    รายการที่พบ (Issues)
+                                </h4>
+                                <div id="issuesList" class="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                    <p class="text-slate-400 italic text-sm pl-7">กำลังตรวจสอบ...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Info Section -->
+                <div class="mt-6 card-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                    <h3 class="text-lg font-semibold mb-4 text-slate-800">ข้อมูลไฟล์</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <span class="text-slate-500 text-sm">ชื่อไฟล์</span>
+                            <p id="scanFileName" class="text-slate-800 font-medium">-</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-sm">จำนวนหน้า</span>
+                            <p id="totalPages" class="text-slate-800 font-medium">-</p>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 text-sm">ยอดรวมทั้งหมด (ตัวอักษร)</span>
+                            <p id="totalAmountText" class="text-slate-800 font-medium">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Document View Tab -->
+            <div id="tab-document-view" class="tab-content">
+                <div class="bg-slate-100/50 min-h-[800px] p-8 rounded-2xl border border-slate-200/60 shadow-inner">
+                    <!-- Document Preview Container -->
+                    <div id="documentPreview" class="font-sans text-sm">
+                        <!-- Content will be injected by JS -->
+                        <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+                            <svg class="w-16 h-16 mb-4 text-slate-300 animate-pulse" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            <p>กำลังเตรียมเอกสาร...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Section -->
+        <div id="errorSection" class="hidden max-w-2xl mx-auto text-center py-16 fade-in">
+            <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
+                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-slate-800 mb-2">เกิดข้อผิดพลาด</h3>
+            <p id="errorMessage" class="text-slate-500 mb-6">-</p>
+            <button onclick="resetAll()"
+                class="px-6 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors">
+                ลองใหม่อีกครั้ง
+            </button>
+        </div>
+        </div>
+        <!-- End Page: ScannerTTB -->
+
+        <!-- Page: TAX INVOICE / RECEIPT -->
+        <div id="pageTaxInvoice" class="page-content w-full flex flex-col items-center" style="display:none;">
+            <div id="taxUploadSection" class="w-full max-w-2xl mx-auto flex flex-col items-center text-center">
+                <div class="inline-flex items-center gap-2 text-sm text-slate-600 mb-6">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    โหมดเอกสารใบกำกับภาษี / ใบเสร็จรับเงิน
+                </div>
+
+                <h2 class="text-3xl lg:text-4xl font-bold text-slate-800 tracking-tight mb-4">
+                    อัปโหลดเอกสาร <span class="text-cyan-600">TAX INVOICE / RECEIPT</span>
+                </h2>
+
+                <p class="text-slate-500 text-base lg:text-lg mb-6 max-w-xl">
+                    สำหรับตรวจสอบข้อมูลภาษีและรายละเอียดใบเสร็จ แยกจากโหมด Bill For Collection อย่างชัดเจน
+                </p>
+
+                <div class="mb-8 flex flex-wrap justify-center gap-2">
+                    <span class="chip-pill">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+                        PDF Only
+                    </span>
+                    <span class="chip-pill">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        OCR Ready
+                    </span>
+                    <span class="chip-pill">
+                        <span class="w-1.5 h-1.5 rounded-full bg-teal-500"></span>
+                        Separate Workflow
+                    </span>
+                </div>
+
+                <div class="w-full">
+                    <div id="taxDropZone"
+                        class="tax-upload-zone bg-white/95 rounded-2xl p-12 text-center cursor-pointer border border-slate-200 shadow-lg transition-all duration-300"
+                        onclick="document.getElementById('taxFileInput').click()">
+
+                        <input type="file" id="taxFileInput" accept=".pdf" class="hidden" multiple
+                            onchange="handleTaxFileSelect(event)">
+
+                        <div id="taxUploadIcon" class="mb-6 inline-block animate-float" style="animation-duration: 5s;">
+                            <svg class="w-20 h-20 text-cyan-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M8 12h8m-4-4v8">
+                                </path>
+                            </svg>
+                        </div>
+
+                        <div id="taxUploadText">
+                            <p class="text-lg text-slate-700 mb-2">
+                                ลากไฟล์มาวาง หรือ <span class="text-cyan-600 underline cursor-pointer hover:text-cyan-700">คลิกเพื่อเลือกไฟล์</span>
+                            </p>
+                            <p class="text-sm text-slate-400">รองรับไฟล์ PDF (ไม่เกิน 20MB)</p>
+                        </div>
+
+                        <div id="taxFileInfo"
+                            class="hidden mt-6 bg-white rounded-2xl p-4 border border-cyan-100 w-full shadow-sm">
+                            <div class="flex items-center gap-3 text-left">
+                                <div class="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center border border-cyan-100">
+                                    <svg class="w-6 h-6 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p id="taxFileName" class="text-slate-800 font-semibold">-</p>
+                                    <p id="taxFileSize" class="text-xs text-slate-500 mt-1">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="taxPdfPreviewWrapper" class="mt-4 hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
+                            <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">PDF Preview</div>
+                            <div id="taxPdfPreviewStatus" class="mb-2 hidden rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700"></div>
+                            <div id="taxPdfPreviewGrid" class="grid grid-cols-1 gap-3 md:grid-cols-2"></div>
+                        </div>
+                    </div>
+
+                    <div id="taxPasswordModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+                            <h3 class="font-bold text-slate-800 mb-2">ไฟล์มีรหัสผ่าน</h3>
+                            <p class="text-slate-600 text-sm mb-4">ไฟล์ที่อัปโหลดมีรหัสผ่าน กรุณาใส่รหัสผ่านเพื่อดำเนินการต่อ</p>
+                            <input id="taxPasswordModalInput" type="password" placeholder="ใส่รหัสผ่าน"
+                                class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:border-cyan-500">
+                            <div class="flex gap-2 justify-end">
+                                <button type="button" onclick="closeTaxPasswordModal()"
+                                    class="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50">ยกเลิก</button>
+                                <button type="button" onclick="submitTaxPasswordModal()"
+                                    class="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">ตกลง</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8">
+                        <button id="taxScanBtn" onclick="startTaxScan()" disabled
+                            class="btn-tax-scan w-full py-4 rounded-xl text-white font-bold text-lg inline-flex items-center justify-center gap-3 transition-all duration-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m2 5H7a2 2 0 01-2-2V7a2 2 0 012-2h3l2-2h3a2 2 0 012 2v10a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            เริ่มตรวจสอบ TAX INVOICE
+                        </button>
+                    </div>
+
+                    <p id="taxScanNotice" class="hidden mt-4 text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-lg py-2 px-3">
+                        โหมด TAX INVOICE กำลังเปิดใช้งานในขั้นถัดไป (UI พร้อมแล้ว)
+                    </p>
+                </div>
+            </div>
+
+            <div id="taxLoadingSection" class="hidden min-h-[60vh] flex flex-col items-center justify-center fade-in max-w-5xl mx-auto px-6 w-full">
+                <div class="w-full max-w-4xl mb-20 relative px-4 md:px-0">
+                    <div class="hidden md:block absolute top-[1.8rem] left-0 w-full h-1 bg-slate-100 rounded-full z-0"></div>
+                    <div id="taxStepperProgressLine"
+                        class="hidden md:block absolute top-[1.8rem] left-0 h-1 bg-gradient-to-r from-emerald-400 to-cyan-500 rounded-full z-0 transition-all duration-700 ease-out"
+                        style="width: 0%"></div>
+
+                    <div class="relative z-10 flex flex-col md:flex-row justify-between w-full gap-6 md:gap-0">
+                        <div id="tax-step-1" class="tax-step-item flex flex-row md:flex-col items-center gap-4 md:w-32">
+                            <div class="tax-step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                                <span class="tax-step-icon text-slate-400 font-bold">1</span>
+                                <div class="tax-step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </div>
+                            <div class="text-left md:text-center">
+                                <p class="tax-step-label font-bold text-slate-800 text-sm mb-0 md:mb-1">อัปโหลด</p>
+                                <p class="tax-step-status text-xs text-cyan-500 font-medium opacity-0">รอสักครู่...</p>
+                            </div>
+                        </div>
+
+                        <div id="tax-step-2" class="tax-step-item flex flex-row md:flex-col items-center gap-4 md:w-32">
+                            <div class="tax-step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                                <span class="tax-step-icon text-slate-400 font-bold">2</span>
+                                <div class="tax-step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </div>
+                            <div class="text-left md:text-center">
+                                <p class="tax-step-label font-bold text-slate-400 text-sm mb-0 md:mb-1">อ่านไฟล์</p>
+                                <p class="tax-step-status text-xs text-cyan-500 font-medium opacity-0">กำลังอ่าน...</p>
+                            </div>
+                        </div>
+
+                        <div id="tax-step-3" class="tax-step-item flex flex-row md:flex-col items-center gap-4 md:w-32">
+                            <div class="tax-step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                                <span class="tax-step-icon text-slate-400 font-bold">3</span>
+                                <div class="tax-step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </div>
+                            <div class="text-left md:text-center">
+                                <p class="tax-step-label font-bold text-slate-400 text-sm mb-0 md:mb-1">วิเคราะห์ AI</p>
+                                <p class="tax-step-status text-xs text-cyan-500 font-medium opacity-0">กำลังวิเคราะห์...</p>
+                            </div>
+                        </div>
+
+                        <div id="tax-step-4" class="tax-step-item flex flex-row md:flex-col items-center gap-4 md:w-32">
+                            <div class="tax-step-circle w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 flex items-center justify-center shadow-sm relative transition-all duration-500 z-10">
+                                <span class="tax-step-icon text-slate-400 font-bold">4</span>
+                                <div class="tax-step-check absolute inset-0 flex items-center justify-center bg-emerald-500 rounded-2xl opacity-0 scale-50 transition-all duration-300">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                </div>
+                            </div>
+                            <div class="text-left md:text-center">
+                                <p class="tax-step-label font-bold text-slate-400 text-sm mb-0 md:mb-1">ตรวจสอบ</p>
+                                <p class="tax-step-status text-xs text-cyan-500 font-medium opacity-0">กำลังยืนยัน...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center space-y-6 animate-fadeInUp">
+                    <div class="relative inline-block">
+                        <div class="w-16 h-16 border-[3px] border-cyan-100 border-t-cyan-500 rounded-full animate-spin"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span id="taxLoadingPercent" class="text-xs font-bold text-cyan-600">0%</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 id="taxLoadingStatusMain" class="text-3xl font-bold text-slate-800 mb-2 tracking-tight">กำลังเตรียมพร้อม...</h3>
+                        <p class="text-slate-500 animate-pulse font-light">Typhoon AI กำลังเริ่มทำงาน</p>
+                    </div>
+                </div>
+                <div class="mt-6 w-full max-w-xl rounded-xl border border-blue-200 bg-blue-50 p-3">
+                    <div class="text-xs font-semibold text-blue-700 mb-1">เวลาแต่ละหน้า</div>
+                    <ul id="taxProgressPageTimings" class="max-h-24 overflow-y-auto text-xs text-blue-800"></ul>
+                </div>
+            </div>
+
+            <div id="taxResultsSection" class="hidden fade-in w-full">
+                <div class="card-white rounded-2xl p-6 border border-slate-200">
+                    <h3 class="font-bold text-slate-800 mb-4">ข้อมูลไฟล์</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-slate-500 text-sm mb-2">ชื่อไฟล์</p>
+                            <ul id="taxResultFileNameList" class="text-slate-800 font-medium space-y-1 list-disc list-inside">-</ul>
+                        </div>
+                        <div>
+                            <p class="text-slate-500 text-sm">จำนวนหน้า</p>
+                            <p id="taxResultPages" class="text-slate-800 font-medium">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-white rounded-2xl p-6 border border-slate-200 mt-4">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                        <h3 class="font-bold text-slate-800">ข้อมูลที่แยกได้จากเอกสาร</h3>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button id="taxExportExcelBtn" onclick="exportTaxToExcel()"
+                                class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                                Export Excel
+                            </button>
+                            <button id="taxExportWordBtn" onclick="exportTaxToWord()"
+                                class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                Export Word
+                            </button>
+                            <button id="taxImportDbBtn" type="button" onclick="taxImportDatabase()"
+                                class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 16m-4-4h12"></path>
+                                </svg>
+                                Import Database
+                            </button>
+                            <button onclick="resetTaxAll()"
+                                class="px-4 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                สแกนใหม่
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700">
+                                    <th class="px-4 py-3 text-left font-semibold">บริษัท</th>
+                                    <th class="px-4 py-3 text-left font-semibold">เลขที่ประจำตัวผู้เสียภาษี TaxID</th>
+                                    <th class="px-4 py-3 text-left font-semibold">เลขที่ใบกำกับภาษี Tax Invoice</th>
+                                    <th class="px-4 py-3 text-left font-semibold">วันที่ Date</th>
+                                    <th class="px-4 py-3 text-left font-semibold">ยอดเงินสุทธิ / Net Amount</th>
+                                    <th class="px-4 py-3 text-left font-semibold">ภาษีมูลค่าเพิ่ม / Vat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="taxDataTableBody" class="bg-white divide-y divide-slate-200">
+                                <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">ยังไม่มีข้อมูล</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-white rounded-2xl p-6 border border-slate-200 mt-4">
+                    <h3 class="font-bold text-slate-800 mb-2">เวลาแต่ละหน้า</h3>
+                    <ul id="taxResultPageTimings" class="max-h-40 overflow-y-auto text-xs text-slate-700"></ul>
+                </div>
+
+                <div class="card-white rounded-2xl p-6 border border-slate-200 mt-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800">ข้อมูล OCR</h3>
+                        <div class="flex items-center gap-2">
+                            <button id="taxOcrPrevBtn" type="button"
+                                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                ก่อนหน้า
+                            </button>
+                            <span id="taxOcrPageInfo" class="text-xs font-semibold text-slate-600">หน้า 1 / 1</span>
+                            <button id="taxOcrNextBtn" type="button"
+                                class="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                ถัดไป
+                            </button>
+                        </div>
+                    </div>
+                    <div id="taxOcrRawText"
+                        class="tax-ocr-view mt-3 bg-white border border-slate-200 rounded-xl p-4 text-xs text-slate-700 overflow-auto max-h-[640px]">-</div>
+                </div>
+            </div>
+
+            <div id="taxErrorSection" class="hidden max-w-2xl mx-auto text-center py-16 fade-in">
+                <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
+                    <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-800 mb-2">เกิดข้อผิดพลาดในการสแกน TAX INVOICE</h3>
+                <p id="taxErrorMessage" class="text-slate-500 mb-6">-</p>
+                <button onclick="resetTaxAll()"
+                    class="px-6 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 transition-colors">
+                    ลองใหม่อีกครั้ง
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 mt-16 py-6 text-center text-slate-500 text-sm">
+        <p>ScannerTTB v1.0 - Built with FastAPI + Typhoon AI</p>
+    </footer>
+    </div>
+    <!-- End content area -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <script>
+        let selectedFile = null;
+        let analysisData = null;
+        let taxAnalysisData = null;
+        let taxPageTexts = [];
+        let taxCurrentPreviewPage = 1;
+        let taxPageTimings = [];
+        let selectedTaxFiles = [];
+        let taxPreviewTimer = null;
+        let taxPdfPasswordRetry = null;
+        const TAX_API_KEY_STORAGE = 'tax_typhoon_api_key';
+
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Top Nav dropdown
+        function toggleTopMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('topMenuList');
+            if (menu) menu.classList.toggle('show');
+        }
+
+        document.addEventListener('click', function (event) {
+            const wrapper = document.getElementById('topMenuWrapper');
+            const menu = document.getElementById('topMenuList');
+            if (!wrapper || !menu) return;
+            if (!wrapper.contains(event.target)) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // Page switching with smooth fade
+        function switchPage(page) {
+            const scannerPage = document.getElementById('pageScannerTTB');
+            const taxPage = document.getElementById('pageTaxInvoice');
+            const currentVisible = scannerPage.classList.contains('page-visible') ? scannerPage : taxPage;
+            const targetPage = page === 'scanner' ? scannerPage : taxPage;
+
+            document.querySelectorAll('.top-nav-item').forEach(el => el.classList.remove('active'));
+            if (page === 'scanner') {
+                document.querySelector('[data-page="scanner"]').classList.add('active');
+                const menuLabel = document.getElementById('topMenuLabel');
+                if (menuLabel) menuLabel.textContent = 'ScannerTBB';
+            } else {
+                document.querySelector('[data-page="tax"]').classList.add('active');
+                const menuLabel = document.getElementById('topMenuLabel');
+                if (menuLabel) menuLabel.textContent = 'TAX INVOICE';
+            }
+            const menu = document.getElementById('topMenuList');
+            if (menu) menu.classList.remove('show');
+
+            if (currentVisible === targetPage) return;
+
+            currentVisible.classList.remove('page-visible');
+            setTimeout(() => {
+                currentVisible.style.display = 'none';
+                targetPage.style.display = 'flex';
+                targetPage.offsetHeight;
+                targetPage.classList.add('page-visible');
+            }, 350);
+        }
+
+        // TAX INVOICE upload handlers
+        let selectedTaxFile = null; // backward compatibility for existing calls
+        const taxDropZone = document.getElementById('taxDropZone');
+
+        if (taxDropZone) {
+            taxDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                taxDropZone.classList.add('dragover');
+            });
+
+            taxDropZone.addEventListener('dragleave', () => {
+                taxDropZone.classList.remove('dragover');
+            });
+
+            taxDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                taxDropZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    selectTaxFiles(Array.from(files));
+                }
+            });
+        }
+
+        function handleTaxFileSelect(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length > 0) selectTaxFiles(files);
+        }
+        const taxOcrPrevBtn = document.getElementById('taxOcrPrevBtn');
+        const taxOcrNextBtn = document.getElementById('taxOcrNextBtn');
+        if (taxOcrPrevBtn) {
+            taxOcrPrevBtn.addEventListener('click', () => {
+                taxCurrentPreviewPage -= 1;
+                updateTaxOcrTextView();
+            });
+        }
+        if (taxOcrNextBtn) {
+            taxOcrNextBtn.addEventListener('click', () => {
+                taxCurrentPreviewPage += 1;
+                updateTaxOcrTextView();
+            });
+        }
+
+        function selectTaxFile(file) {
+            selectTaxFiles([file]);
+        }
+
+        function selectTaxFiles(files) {
+            const taxUploadText = document.getElementById('taxUploadText');
+            const taxUploadIcon = document.getElementById('taxUploadIcon');
+            const taxFileInfo = document.getElementById('taxFileInfo');
+            const taxFileName = document.getElementById('taxFileName');
+            const taxFileSize = document.getElementById('taxFileSize');
+            const taxScanBtn = document.getElementById('taxScanBtn');
+            const taxScanNotice = document.getElementById('taxScanNotice');
+            const validFiles = (files || []).filter(f => f && f.name && f.name.toLowerCase().endsWith('.pdf'));
+
+            if (!validFiles.length) {
+                selectedTaxFile = null;
+                selectedTaxFiles = [];
+                if (taxScanBtn) taxScanBtn.disabled = true;
+                if (taxScanNotice) {
+                    taxScanNotice.textContent = 'รองรับเฉพาะไฟล์ PDF เท่านั้น';
+                    taxScanNotice.classList.remove('hidden');
+                }
+                return;
+            }
+            selectedTaxFiles = validFiles;
+            selectedTaxFile = validFiles[0];
+
+            if (taxUploadText) taxUploadText.classList.add('hidden');
+            if (taxUploadIcon) taxUploadIcon.classList.add('hidden');
+            if (taxFileInfo) taxFileInfo.classList.remove('hidden');
+            if (taxFileName) taxFileName.textContent = validFiles.length === 1 ? validFiles[0].name : `${validFiles.length} ไฟล์`;
+            if (taxFileSize) {
+                const totalSize = validFiles.reduce((sum, f) => sum + (f.size || 0), 0);
+                taxFileSize.textContent = `${formatFileSize(totalSize)} (${validFiles.length} files)`;
+            }
+            if (taxScanBtn) taxScanBtn.disabled = false;
+            if (taxScanNotice) taxScanNotice.classList.add('hidden');
+            renderTaxPdfPreviewList(validFiles);
+        }
+
+        function setTaxPdfPreviewStatus(message = '', visible = false) {
+            const statusEl = document.getElementById('taxPdfPreviewStatus');
+            if (!statusEl) return;
+            statusEl.textContent = message;
+            if (visible) statusEl.classList.remove('hidden');
+            else statusEl.classList.add('hidden');
+        }
+
+        async function renderTaxPdfPreviewList(files) {
+            const wrapper = document.getElementById('taxPdfPreviewWrapper');
+            const grid = document.getElementById('taxPdfPreviewGrid');
+            if (!wrapper || !grid || !window.pdfjsLib) return;
+            grid.innerHTML = '';
+            if (!files || !files.length) {
+                wrapper.classList.add('hidden');
+                return;
+            }
+            wrapper.classList.remove('hidden');
+            setTaxPdfPreviewStatus('กำลังสร้างตัวอย่างไฟล์...', true);
+            const password = taxPdfPasswordRetry || undefined;
+
+            for (const file of files) {
+                const card = document.createElement('div');
+                card.className = 'rounded-lg border border-slate-200 bg-white p-2';
+                const title = document.createElement('div');
+                title.className = 'mb-2 text-xs font-semibold text-slate-700 truncate';
+                title.textContent = file.name;
+                const canvas = document.createElement('canvas');
+                canvas.className = 'w-full rounded border border-slate-200 bg-white';
+                card.appendChild(title);
+                card.appendChild(canvas);
+                grid.appendChild(card);
+                try {
+                    const data = await file.arrayBuffer();
+                    const pdfDoc = await window.pdfjsLib.getDocument({ data, password }).promise;
+                    const page = await pdfDoc.getPage(1);
+                    const viewport = page.getViewport({ scale: 1.0 });
+                    const maxWidth = 360;
+                    const scale = viewport.width > maxWidth ? maxWidth / viewport.width : 1;
+                    const finalViewport = page.getViewport({ scale });
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = Math.ceil(finalViewport.width);
+                    canvas.height = Math.ceil(finalViewport.height);
+                    await page.render({ canvasContext: ctx, viewport: finalViewport }).promise;
+                } catch (e) {
+                    const note = document.createElement('div');
+                    note.className = 'mt-2 text-xs text-amber-700';
+                    note.textContent = 'ไม่สามารถแสดง preview ไฟล์นี้';
+                    card.appendChild(note);
+                }
+            }
+            setTaxPdfPreviewStatus('', false);
+        }
+
+        async function startTaxScan() {
+            const taxScanNotice = document.getElementById('taxScanNotice');
+            const taxScanBtn = document.getElementById('taxScanBtn');
+            if (!selectedTaxFiles.length || !taxScanNotice) return;
+
+            if (!selectedTaxFiles.every(f => f.name.toLowerCase().endsWith('.pdf'))) {
+                taxScanNotice.textContent = 'กรุณาเลือกไฟล์ PDF เท่านั้น';
+                taxScanNotice.classList.remove('hidden');
+                return;
+            }
+
+            taxScanNotice.textContent = 'กำลังส่งไฟล์ให้ Typhoon AI ตรวจสอบ...';
+            taxScanNotice.classList.remove('hidden');
+            if (taxScanBtn) taxScanBtn.disabled = true;
+
+            document.getElementById('taxUploadSection').classList.add('hidden');
+            document.getElementById('taxLoadingSection').classList.remove('hidden');
+            document.getElementById('taxResultsSection').classList.add('hidden');
+            document.getElementById('taxErrorSection').classList.add('hidden');
+
+            updateTaxStepper(1);
+            document.getElementById('taxLoadingPercent').textContent = '0%';
+            document.getElementById('taxLoadingStatusMain').textContent = 'กำลังเริ่มทำงาน...';
+
+            const pdfPassword = taxPdfPasswordRetry || '';
+            taxPdfPasswordRetry = null;
+            const formData = new FormData();
+            selectedTaxFiles.forEach(file => formData.append('pdf_file', file));
+            formData.append('max_pages', 0);
+            formData.append('pdf_password', pdfPassword);
+            formData.append('api_key', '');
+
+            try {
+                const startResp = await fetch('/api/tax-ocr/start', {
+                    method: 'POST',
+                    body: formData
+                });
+                const startData = await startResp.json();
+                if (!startResp.ok || !startData.ok) {
+                    throw new Error(startData.detail || startData.error || 'ไม่สามารถเริ่ม OCR ได้');
+                }
+
+                const jobId = startData.job_id;
+                let completed = false;
+                while (!completed) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    const statusResp = await fetch(`/api/tax-ocr/status/${jobId}`);
+                    const statusData = await statusResp.json();
+                    if (!statusResp.ok || !statusData.ok) {
+                        throw new Error(statusData.detail || statusData.error || 'ไม่สามารถอ่านสถานะ OCR ได้');
+                    }
+
+                    if (statusData.status === 'running') {
+                        const step = statusData.current_step || 0;
+                        const total = Math.max(statusData.total_steps || 1, 1);
+                        const percent = Math.max(1, Math.min(100, Math.round((step / total) * 100)));
+                        document.getElementById('taxLoadingPercent').textContent = percent + '%';
+                        if (percent < 25) {
+                            updateTaxStepper(1);
+                            document.getElementById('taxLoadingStatusMain').textContent = 'กำลังอัปโหลดไฟล์...';
+                        } else if (percent < 50) {
+                            updateTaxStepper(2);
+                            document.getElementById('taxLoadingStatusMain').textContent = 'กำลังอ่านข้อมูล PDF...';
+                        } else if (percent < 85) {
+                            updateTaxStepper(3);
+                            document.getElementById('taxLoadingStatusMain').textContent = 'Typhoon OCR กำลังวิเคราะห์...';
+                        } else {
+                            updateTaxStepper(4);
+                            document.getElementById('taxLoadingStatusMain').textContent = 'กำลังจัดรูปแบบผลลัพธ์...';
+                        }
+                        taxPageTimings = Array.isArray(statusData.page_timings) ? statusData.page_timings : [];
+                        renderTaxPageTimingList('taxProgressPageTimings', taxPageTimings);
+                    } else if (statusData.status === 'failed') {
+                        const err = statusData.error || 'OCR ล้มเหลว';
+                        const lowerErr = (err + '').toLowerCase();
+                        if (lowerErr.includes('password') || lowerErr.includes('encrypt') || lowerErr.includes('decrypt') || lowerErr.includes('รหัสผ่าน')) {
+                            showTaxPasswordModal();
+                            completed = true;
+                            return;
+                        }
+                        throw new Error(err);
+                    } else if (statusData.status === 'completed') {
+                        updateTaxStepper(4);
+                        document.getElementById('taxLoadingPercent').textContent = '100%';
+                        const data = statusData.result;
+                        taxAnalysisData = data;
+                        taxPageTimings = Array.isArray(statusData.page_timings) ? statusData.page_timings : (data.page_timings || []);
+                        renderTaxPageTimingList('taxProgressPageTimings', taxPageTimings);
+                        displayTaxResults(data);
+                        completed = true;
+                    }
+                }
+
+            } catch (error) {
+                showTaxError(error.message);
+            } finally {
+                if (taxScanBtn) taxScanBtn.disabled = false;
+            }
+        }
+
+        function updateTaxStepper(step) {
+            const progressMap = { 1: '0%', 2: '33%', 3: '66%', 4: '100%' };
+            const line = document.getElementById('taxStepperProgressLine');
+            if (line) line.style.width = progressMap[step] || '0%';
+
+            for (let i = 1; i <= 4; i++) {
+                const item = document.getElementById(`tax-step-${i}`);
+                if (!item) continue;
+
+                const circle = item.querySelector('.tax-step-circle');
+                const icon = item.querySelector('.tax-step-icon');
+                const check = item.querySelector('.tax-step-check');
+                const label = item.querySelector('.tax-step-label');
+                const status = item.querySelector('.tax-step-status');
+
+                if (i < step) {
+                    circle.classList.remove('border-slate-200', 'border-cyan-500', 'ring-4', 'ring-cyan-100');
+                    circle.classList.add('border-emerald-500', 'bg-emerald-50');
+                    icon.classList.add('opacity-0');
+                    check.classList.remove('opacity-0', 'scale-50');
+                    label.classList.remove('text-slate-400', 'text-cyan-700');
+                    label.classList.add('text-emerald-600');
+                    status.textContent = 'เสร็จสิ้น';
+                    status.classList.remove('opacity-0', 'text-cyan-500');
+                    status.classList.add('text-emerald-500');
+                } else if (i === step) {
+                    circle.classList.remove('border-slate-200', 'bg-emerald-50');
+                    circle.classList.add('border-cyan-500', 'ring-4', 'ring-cyan-100', 'bg-white');
+                    icon.classList.remove('opacity-0');
+                    check.classList.add('opacity-0', 'scale-50');
+                    label.classList.remove('text-slate-400', 'text-emerald-600');
+                    label.classList.add('text-cyan-700');
+                    status.classList.remove('opacity-0', 'text-emerald-500');
+                    status.classList.add('text-cyan-500');
+                } else {
+                    circle.classList.remove('border-emerald-500', 'border-cyan-500', 'ring-4', 'ring-cyan-100', 'bg-emerald-50');
+                    circle.classList.add('border-slate-200', 'bg-white');
+                    icon.classList.remove('opacity-0');
+                    check.classList.add('opacity-0', 'scale-50');
+                    label.classList.remove('text-emerald-600', 'text-cyan-700');
+                    label.classList.add('text-slate-400');
+                    status.classList.add('opacity-0');
+                }
+            }
+        }
+
+        function displayTaxResults(data) {
+            document.getElementById('taxLoadingSection').classList.add('hidden');
+            document.getElementById('taxResultsSection').classList.remove('hidden');
+            document.getElementById('taxErrorSection').classList.add('hidden');
+
+            const fnList = document.getElementById('taxResultFileNameList');
+            if (fnList) {
+                const names = (data.filename || '')
+                    .split(/,\s*/)
+                    .map(s => s.trim())
+                    .filter(Boolean);
+                fnList.innerHTML = names.length
+                    ? names.map(n => `<li class="text-slate-800">${escapeHtml(n)}</li>`).join('')
+                    : '<li class="text-slate-500">-</li>';
+            }
+            document.getElementById('taxResultPages').textContent = (data.total_pages || '-') + ' หน้า';
+
+            taxPageTexts = Array.isArray(data.page_texts) ? data.page_texts : [];
+            taxCurrentPreviewPage = 1;
+            renderTaxPageTimingList('taxResultPageTimings', taxPageTimings);
+            renderTaxDataTable(data.tax_invoice_rows || []);
+            updateTaxOcrTextView();
+        }
+
+        async function taxImportDatabase() {
+            const rows = (taxAnalysisData && taxAnalysisData.tax_invoice_rows) || [];
+            const filename = (taxAnalysisData && taxAnalysisData.filename) || '';
+            if (!rows.length) {
+                alert('ยังไม่มีข้อมูลสำหรับ Import');
+                return;
+            }
+            const btn = document.getElementById('taxImportDbBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const resp = await fetch('/api/tax-import-database', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tax_invoice_rows: rows, filename })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.detail || 'Import ล้มเหลว');
+                alert(data.message || 'Import ข้อมูลลง TaxInvoiceDB เรียบร้อยแล้ว');
+            } catch (e) {
+                alert(e.message || 'Import ล้มเหลว');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function renderTaxDataTable(rows) {
+            const tbody = document.getElementById('taxDataTableBody');
+            if (!tbody) return;
+
+            const cols = ['company', 'tax_id', 'invoice_no', 'date', 'net_amount', 'vat_amount'];
+            if (!Array.isArray(rows) || rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">ยังไม่มีข้อมูล</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rows.map(row => `
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 text-slate-800">${escapeHtml(row.company || '-')}</td>
+                    <td class="px-4 py-3 text-slate-800 font-mono text-xs">${escapeHtml(row.tax_id || '-')}</td>
+                    <td class="px-4 py-3 text-slate-800 font-mono text-xs">${escapeHtml(row.invoice_no || '-')}</td>
+                    <td class="px-4 py-3 text-slate-800">${escapeHtml(row.date || '-')}</td>
+                    <td class="px-4 py-3 text-slate-800">${escapeHtml(row.net_amount || '-')}</td>
+                    <td class="px-4 py-3 text-slate-800">${escapeHtml(row.vat_amount || '-')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            if (str == null) return '-';
+            const s = String(str);
+            const div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+
+        function exportTaxToExcel() {
+            const rows = (taxAnalysisData && taxAnalysisData.tax_invoice_rows) || [];
+            if (!rows.length) {
+                alert('ยังไม่มีข้อมูลสำหรับ Export');
+                return;
+            }
+
+            const headers = ['บริษัท', 'เลขที่ประจำตัวผู้เสียภาษี TaxID', 'เลขที่ใบกำกับภาษี Tax Invoice', 'วันที่ Date', 'ยอดเงินสุทธิ / Net Amount', 'ภาษีมูลค่าเพิ่ม / Vat'];
+            const cols = ['company', 'tax_id', 'invoice_no', 'date', 'net_amount', 'vat_amount'];
+            const wsData = [headers];
+            rows.forEach(row => {
+                wsData.push(cols.map(c => row[c] || ''));
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'TAX INVOICE');
+            const fileName = `TAX_INVOICE_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        }
+
+        async function exportTaxToWord() {
+            const rows = (taxAnalysisData && taxAnalysisData.tax_invoice_rows) || [];
+            if (!rows.length) {
+                alert('ยังไม่มีข้อมูลสำหรับ Export');
+                return;
+            }
+            try {
+                const resp = await fetch('/api/tax-export/docx', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tax_invoice_rows: rows })
+                });
+                if (!resp.ok) throw new Error(await resp.text());
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `TAX_INVOICE_${new Date().toISOString().slice(0, 10)}.docx`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert('Export Word ล้มเหลว: ' + (e.message || e));
+            }
+        }
+
+        function updateTaxOcrTextView() {
+            const raw = document.getElementById('taxOcrRawText');
+            const info = document.getElementById('taxOcrPageInfo');
+            const prevBtn = document.getElementById('taxOcrPrevBtn');
+            const nextBtn = document.getElementById('taxOcrNextBtn');
+            if (!raw || !info || !prevBtn || !nextBtn) return;
+
+            const total = taxPageTexts.length > 0 ? taxPageTexts.length : 1;
+            if (taxCurrentPreviewPage < 1) taxCurrentPreviewPage = 1;
+            if (taxCurrentPreviewPage > total) taxCurrentPreviewPage = total;
+
+            const pageText = taxPageTexts.length > 0 ? (taxPageTexts[taxCurrentPreviewPage - 1] || '-') : '-';
+            raw.innerHTML = renderTaxOcrHtml(pageText);
+            info.textContent = `หน้า ${taxCurrentPreviewPage} / ${total}`;
+            prevBtn.disabled = taxCurrentPreviewPage <= 1;
+            nextBtn.disabled = taxCurrentPreviewPage >= total;
+            prevBtn.classList.toggle('opacity-50', prevBtn.disabled);
+            nextBtn.classList.toggle('opacity-50', nextBtn.disabled);
+            prevBtn.classList.toggle('cursor-not-allowed', prevBtn.disabled);
+            nextBtn.classList.toggle('cursor-not-allowed', nextBtn.disabled);
+        }
+
+        function renderTaxOcrHtml(text) {
+            const cleaned = (text || '-')
+                .replace(/\(cid:\d+\)/g, ' ')
+                .replace(/[ \t]+/g, ' ')
+                .trim();
+            if (!cleaned || cleaned === '-') return '-';
+
+            if (window.marked && window.DOMPurify) {
+                marked.setOptions({ gfm: true, breaks: true });
+                const html = marked.parse(cleaned);
+                return DOMPurify.sanitize(html);
+            }
+
+            const escaped = cleaned
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+            return escaped;
+        }
+
+        function renderTaxPageTimingList(targetId, timings) {
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            target.innerHTML = '';
+            if (!Array.isArray(timings) || timings.length === 0) {
+                target.innerHTML = '<li class="text-slate-500">ยังไม่มีข้อมูลเวลา</li>';
+                return;
+            }
+            timings.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `หน้า ${item.page_number}: ${item.elapsed_seconds} วินาที`;
+                target.appendChild(li);
+            });
+        }
+
+        function showTaxError(message) {
+            document.getElementById('taxLoadingSection').classList.add('hidden');
+            document.getElementById('taxResultsSection').classList.add('hidden');
+            document.getElementById('taxErrorSection').classList.remove('hidden');
+            document.getElementById('taxErrorMessage').textContent = message;
+        }
+
+        function showTaxPasswordModal() {
+            document.getElementById('taxLoadingSection').classList.add('hidden');
+            document.getElementById('taxUploadSection').classList.remove('hidden');
+            const modal = document.getElementById('taxPasswordModal');
+            const input = document.getElementById('taxPasswordModalInput');
+            if (modal) modal.classList.remove('hidden');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        function closeTaxPasswordModal() {
+            const modal = document.getElementById('taxPasswordModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function submitTaxPasswordModal() {
+            const input = document.getElementById('taxPasswordModalInput');
+            const pw = input ? input.value.trim() : '';
+            closeTaxPasswordModal();
+            if (pw) {
+                taxPdfPasswordRetry = pw;
+                startTaxScan();
+            }
+        }
+
+        function resetTaxAll() {
+            selectedTaxFile = null;
+            taxAnalysisData = null;
+
+            const input = document.getElementById('taxFileInput');
+            if (input) input.value = '';
+
+            const taxUploadText = document.getElementById('taxUploadText');
+            const taxUploadIcon = document.getElementById('taxUploadIcon');
+            const taxFileInfo = document.getElementById('taxFileInfo');
+            const taxScanBtn = document.getElementById('taxScanBtn');
+            const taxScanNotice = document.getElementById('taxScanNotice');
+            const taxPdfPreviewWrapper = document.getElementById('taxPdfPreviewWrapper');
+
+            if (taxUploadText) taxUploadText.classList.remove('hidden');
+            if (taxUploadIcon) taxUploadIcon.classList.remove('hidden');
+            if (taxFileInfo) taxFileInfo.classList.add('hidden');
+            if (taxScanBtn) taxScanBtn.disabled = true;
+            if (taxScanNotice) taxScanNotice.classList.add('hidden');
+            if (taxPdfPreviewWrapper) taxPdfPreviewWrapper.classList.add('hidden');
+            taxPdfPasswordRetry = null;
+            taxPageTexts = [];
+            taxCurrentPreviewPage = 1;
+            taxPageTimings = [];
+            selectedTaxFiles = [];
+            const taxPdfPreviewGrid = document.getElementById('taxPdfPreviewGrid');
+            if (taxPdfPreviewGrid) taxPdfPreviewGrid.innerHTML = '';
+            renderTaxPageTimingList('taxProgressPageTimings', []);
+            renderTaxPageTimingList('taxResultPageTimings', []);
+            const taxOcrRawText = document.getElementById('taxOcrRawText');
+            if (taxOcrRawText) taxOcrRawText.textContent = '-';
+            setTaxPdfPreviewStatus('', false);
+            updateTaxOcrTextView();
+
+            document.getElementById('taxUploadSection').classList.remove('hidden');
+            document.getElementById('taxLoadingSection').classList.add('hidden');
+            document.getElementById('taxResultsSection').classList.add('hidden');
+            document.getElementById('taxErrorSection').classList.add('hidden');
+        }
+
+        // Drag and drop handlers
+        const dropZone = document.getElementById('dropZone');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.toLowerCase().endsWith('.pdf')) {
+                selectFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) selectFile(file);
+        }
+
+        async function selectFile(file) {
+            selectedFile = file;
+            document.getElementById('uploadText').classList.add('hidden');
+            document.getElementById('uploadIcon').classList.add('hidden');
+            document.getElementById('fileInfo').classList.remove('hidden');
+            document.getElementById('optionsSection').classList.remove('hidden');
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+
+            // Reset password section
+            const pwSection = document.getElementById('passwordSection');
+            const manualBtn = document.getElementById('manualPasswordBtn');
+
+            pwSection.classList.add('hidden');
+            pwSection.classList.remove('border-red-500/50');
+            pwSection.classList.add('border-amber-500/30');
+            if (manualBtn) manualBtn.classList.add('hidden'); // Hide manual button initially
+
+            document.getElementById('pdfPassword').value = '';
+            document.getElementById('pdfPassword').classList.remove('border-red-500');
+            document.getElementById('passwordLabel').textContent = 'ไฟล์นี้มีรหัสผ่าน กรุณาใส่รหัสผ่าน';
+            document.getElementById('passwordHint').textContent = 'กรุณาใส่รหัสผ่านเพื่อเปิดไฟล์ PDF นี้';
+            const oldErr = document.getElementById('passwordError');
+            if (oldErr) oldErr.remove();
+
+            // Check if PDF needs password
+            document.getElementById('scanBtn').disabled = true;
+            const checkFormData = new FormData();
+            checkFormData.append('file', file);
+
+            try {
+                console.log('Checking PDF password protection...');
+                const checkResp = await fetch('/api/check-pdf', { method: 'POST', body: checkFormData });
+
+                if (!checkResp.ok) {
+                    console.error('Check PDF API failed:', checkResp.status);
+                    // If check fails, allow scan but show manual password button just in case
+                    document.getElementById('scanBtn').disabled = false;
+                    if (manualBtn) manualBtn.classList.remove('hidden');
+                    return;
+                }
+
+                const checkData = await checkResp.json();
+                console.log('Check PDF result:', checkData);
+
+                if (checkData.needs_password) {
+                    // Show password section
+                    pwSection.classList.remove('hidden');
+                    document.getElementById('pdfPassword').focus();
+                    if (manualBtn) manualBtn.classList.add('hidden'); // No need for manual button if detected
+                } else {
+                    // No password needed (detected)
+                    pwSection.classList.add('hidden');
+                    // Show manual button just in case detection was wrong
+                    if (manualBtn) manualBtn.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Error checking PDF:', err);
+                // If check fails, allow scan but show manual password button
+                if (manualBtn) manualBtn.classList.remove('hidden');
+            } finally {
+                document.getElementById('scanBtn').disabled = false;
+            }
+        }
+
+        function forceShowPassword() {
+            const pwSection = document.getElementById('passwordSection');
+            const manualBtn = document.getElementById('manualPasswordBtn');
+
+            pwSection.classList.remove('hidden');
+            document.getElementById('passwordLabel').textContent = 'ใส่รหัสผ่าน';
+            document.getElementById('passwordHint').textContent = 'กรุณาใส่รหัสผ่านเพื่อเปิดไฟล์ PDF นี้';
+            document.getElementById('pdfPassword').focus();
+
+            if (manualBtn) manualBtn.classList.add('hidden');
+        }
+
+        function clearFile() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('uploadText').classList.remove('hidden');
+            document.getElementById('uploadIcon').classList.remove('hidden');
+            document.getElementById('fileInfo').classList.add('hidden');
+            document.getElementById('optionsSection').classList.add('hidden');
+            document.getElementById('scanBtn').disabled = true;
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('pdfPassword');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
+            } else {
+                input.type = 'password';
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function updateStepper(step) {
+            // step: 1..4
+            const progressMap = { 1: '0%', 2: '33%', 3: '66%', 4: '100%' };
+            const line = document.getElementById('stepperProgressLine');
+            if (line) line.style.width = progressMap[step] || '0%';
+
+            for (let i = 1; i <= 4; i++) {
+                const item = document.getElementById(`step-${i}`);
+                if (!item) continue;
+
+                const circle = item.querySelector('.step-circle');
+                const icon = item.querySelector('.step-icon');
+                const check = item.querySelector('.step-check');
+                const label = item.querySelector('.step-label');
+                const status = item.querySelector('.step-status');
+
+                if (i < step) {
+                    // Completed
+                    circle.classList.remove('border-slate-200', 'border-indigo-500', 'ring-4', 'ring-indigo-100');
+                    circle.classList.add('border-emerald-500', 'bg-emerald-50');
+                    icon.classList.add('opacity-0');
+                    check.classList.remove('opacity-0', 'scale-50');
+                    label.classList.remove('text-slate-400', 'text-slate-800', 'font-bold');
+                    label.classList.add('text-emerald-600', 'font-semibold');
+                    status.textContent = 'เสร็จสิ้น';
+                    status.classList.remove('opacity-0', 'text-indigo-500');
+                    status.classList.add('text-emerald-500');
+                } else if (i === step) {
+                    // Active
+                    circle.classList.remove('border-slate-200', 'bg-emerald-50');
+                    circle.classList.add('border-indigo-500', 'ring-4', 'ring-indigo-100', 'bg-white');
+                    icon.classList.remove('opacity-0', 'text-slate-400');
+                    icon.classList.add('text-indigo-500');
+                    check.classList.add('opacity-0', 'scale-50');
+                    label.classList.remove('text-slate-400', 'text-emerald-600');
+                    label.classList.add('text-indigo-700', 'font-bold');
+                    status.classList.remove('opacity-0', 'text-emerald-500');
+                    status.classList.add('text-indigo-500');
+
+                    // Set Status Text based on step
+                    if (i === 1) status.textContent = 'กำลังอัปโหลด...';
+                    if (i === 2) status.textContent = 'กำลังอ่านไฟล์...';
+                    if (i === 3) status.textContent = 'กำลังวิเคราะห์...';
+                    if (i === 4) status.textContent = 'ตรวจสอบความถูกต้อง...';
+
+                } else {
+                    // Pending
+                    circle.classList.remove('border-emerald-500', 'border-indigo-500', 'ring-4', 'ring-indigo-100', 'bg-emerald-50');
+                    circle.classList.add('border-slate-200', 'bg-white');
+                    icon.classList.remove('opacity-0', 'text-indigo-500');
+                    icon.classList.add('text-slate-400');
+                    check.classList.add('opacity-0', 'scale-50');
+                    label.classList.remove('text-emerald-600', 'text-indigo-700', 'font-bold');
+                    label.classList.add('text-slate-400');
+                    status.classList.add('opacity-0');
+                }
+            }
+        }
+
+        async function startScan(apiEndpoint = '/api/scan') {
+            if (!selectedFile) return;
+
+            // Clear any previous password error
+            document.getElementById('pdfPassword').classList.remove('border-red-500');
+            const pwErr = document.getElementById('passwordError');
+            if (pwErr) pwErr.remove();
+
+            // Show loading & Init Stepper
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('errorSection').classList.add('hidden');
+
+            // Reset Stepper to Step 1
+            updateStepper(1);
+            document.getElementById('loadingPercent').textContent = '0%';
+            document.getElementById('loadingStatusMain').textContent = 'กำลังเริ่มทำงาน...';
+
+            const maxPages = parseInt(document.getElementById('maxPages').value) || 0;
+            const pdfPassword = document.getElementById('pdfPassword').value || '';
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('max_pages', maxPages);
+            formData.append('pdf_password', pdfPassword);
+
+            // Simulate progress (More realistic steps)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                // Slower progress 
+                if (progress < 90) {
+                    progress += Math.random() * 2;
+                }
+
+                // Update Main Percent
+                document.getElementById('loadingPercent').textContent = Math.floor(progress) + '%';
+
+                // Control Steps based on progress
+                if (progress < 15) {
+                    updateStepper(1); // Uploading
+                    document.getElementById('loadingStatusMain').textContent = 'กำลังอัปโหลดไฟล์...';
+                } else if (progress < 40) {
+                    updateStepper(2); // Reading PDF
+                    document.getElementById('loadingStatusMain').textContent = 'กำลังอ่านข้อมูล PDF...';
+                } else if (progress < 85) {
+                    updateStepper(3); // Analyzing
+                    document.getElementById('loadingStatusMain').textContent = 'Typhoon AI กำลังวิเคราะห์...';
+                } else {
+                    updateStepper(4); // Verifying
+                    document.getElementById('loadingStatusMain').textContent = 'ตรวจสอบความถูกต้อง...';
+                }
+            }, 100);
+
+            try {
+                const response = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                updateStepper(4);
+                document.getElementById('loadingPercent').textContent = '100%';
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        // Wrong password or password required
+                        document.getElementById('loadingSection').classList.add('hidden');
+                        document.getElementById('uploadSection').classList.remove('hidden');
+
+                        // Show password section
+                        const pwSection = document.getElementById('passwordSection');
+                        pwSection.classList.remove('hidden');
+
+                        const pwInput = document.getElementById('pdfPassword');
+
+                        // Clear old error
+                        const oldErr = document.getElementById('passwordError');
+                        if (oldErr) oldErr.remove();
+
+                        // Always show "wrong password" since check-pdf already detected encryption
+                        document.getElementById('passwordLabel').textContent = 'รหัสผ่านไม่ถูกต้อง';
+                        document.getElementById('passwordHint').textContent = 'กรุณาตรวจสอบและใส่รหัสผ่านใหม่อีกครั้ง';
+                        pwSection.classList.remove('border-amber-500/30');
+                        pwSection.classList.add('border-red-500/50');
+                        pwInput.classList.add('border-red-500');
+                        pwInput.value = '';
+                        pwSection.insertAdjacentHTML('beforeend',
+                            '<p id="passwordError" class="text-red-400 text-sm mt-3 flex items-center gap-2 animate-pulse">' +
+                            '<svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path></svg>' +
+                            'รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่</p>');
+
+                        pwInput.focus();
+                        return;
+                    }
+                    throw new Error(data.detail || 'เกิดข้อผิดพลาด');
+                }
+
+                analysisData = data;
+                displayResults(data);
+
+                // Show Import Button
+                document.getElementById('importBtn').classList.remove('hidden');
+                document.getElementById('importBtn').disabled = false;
+                document.getElementById('importBtn').classList.remove('bg-emerald-600');
+                document.getElementById('importBtn').classList.add('bg-indigo-600');
+                document.getElementById('importBtn').innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    Import Database
+                `;
+
+                // Show Import Button
+                document.getElementById('importBtn').classList.remove('hidden');
+                document.getElementById('importBtn').innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+                    </svg>
+                    Import Database
+                `;
+                document.getElementById('importBtn').disabled = false;
+            } catch (error) {
+                clearInterval(progressInterval);
+                showError(error.message);
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+
+            const analysis = data.analysis;
+
+            // Bill Info
+            if (analysis.bill_info) {
+                document.getElementById('billNumber').textContent = analysis.bill_info.bill_number || '-';
+                document.getElementById('billDate').textContent = analysis.bill_info.date || '-';
+                document.getElementById('customerName').textContent = analysis.bill_info.customer_name || '-';
+                document.getElementById('customerAddress').textContent = analysis.bill_info.address || '-';
+                document.getElementById('creditLineNo').textContent = analysis.bill_info.credit_line_no || '-';
+                document.getElementById('ref1').textContent = analysis.bill_info.ref1 || '-';
+                document.getElementById('ref2').textContent = analysis.bill_info.ref2 || '-';
+            }
+
+            // Summary
+            if (analysis.summary) {
+                document.getElementById('totalItems').textContent = analysis.summary.total_items || '-';
+                document.getElementById('totalAmount').textContent = formatCurrency(analysis.summary.calculated_total || analysis.summary.total_amount) || '-';
+                document.getElementById('bankName').textContent = analysis.summary.bank_name || 'ธนาคารทหารไทยธนชาต จำกัด (มหาชน)';
+                document.getElementById('closedCount').textContent = analysis.summary.closed_items || '0';
+                document.getElementById('activeCount').textContent = analysis.summary.active_items || '0';
+                document.getElementById('totalAmountText').textContent = analysis.summary.total_amount_text || '-';
+                document.getElementById('pagesInfo').textContent =
+                    (analysis.summary.pages_processed || data.pages_processed || '-') +
+                    ' / ' + (analysis.summary.total_pdf_pages || data.total_pages || '-');
+            }
+
+            // Items table
+            if (analysis.items && analysis.items.length > 0) {
+                renderTable(analysis.items);
+            }
+
+            // Verification
+            if (analysis.verification) {
+                const completeness = analysis.verification.data_completeness || '0';
+                const numericCompleteness = parseFloat(completeness.toString().replace('%', ''));
+                document.getElementById('completenessPercent').textContent = numericCompleteness + '%';
+
+                // Update Score Ring
+                setTimeout(() => {
+                    const circle = document.getElementById('scoreRing');
+                    if (circle) {
+                        const radius = circle.r.baseVal.value;
+                        const circumference = 2 * Math.PI * radius;
+                        const offset = circumference - (numericCompleteness / 100) * circumference;
+                        circle.style.strokeDashoffset = offset;
+                    }
+                }, 200);
+                document.getElementById('verificationNotes').textContent = analysis.verification.notes || 'ไม่มีหมายเหตุ';
+
+                const issuesList = document.getElementById('issuesList');
+                if (analysis.verification.issues_found && analysis.verification.issues_found.length > 0) {
+                    issuesList.innerHTML = analysis.verification.issues_found.map(issue => `
+                        <div class="flex items-start gap-2 bg-yellow-500/10 rounded-lg p-3">
+                            <svg class="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            </svg>
+                            <span class="text-yellow-200">${issue}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    issuesList.innerHTML = `
+                        <div class="flex items-center gap-2 bg-emerald-500/10 rounded-lg p-3">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span class="text-emerald-700 font-medium">ไม่พบปัญหาในเอกสาร (Passed)</span>
+                        </div>
+                    `;
+                }
+            }
+
+            // File info
+            document.getElementById('scanFileName').textContent = data.filename || '-';
+            document.getElementById('totalPages').textContent = (data.total_pages || '-') + ' หน้า';
+
+            // Document View (Digital Twin)
+            renderDocumentView(analysis);
+
+            // Show Overview Tab
+            switchTab('overview');
+        }
+
+        function renderDocumentView(analysis) {
+            const bill = analysis.bill_info || {};
+            const items = analysis.items || [];
+            const container = document.getElementById('documentPreview');
+            container.innerHTML = ''; // Clear container
+
+            // Helper to format date
+            const formatDate = (dateStr) => dateStr || '';
+
+            // Group items by page
+            const grouped = {};
+            items.forEach(item => {
+                const page = item.page_number || 1;
+                if (!grouped[page]) grouped[page] = [];
+                grouped[page].push(item);
+            });
+
+            const pages = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+            const totalPages = pages.length;
+
+            pages.forEach((pageNum, index) => {
+                const pageItems = grouped[pageNum];
+                const isLastPage = index === totalPages - 1;
+
+                // Build Items Rows for this page
+                const itemRows = pageItems.map(item => `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 8px; border-right: 1px solid #eee; vertical-align: top;">${item.chassis_number || ''} <br><span style="font-size: 0.8em; color: #555;">${item.status === 'Closed' ? '(Closed)' : ''}</span></td>
+                        <td style="padding: 8px; border-right: 1px solid #eee; vertical-align: top;">${item.description || ''}</td>
+                        <td style="padding: 8px; border-right: 1px solid #eee; text-align: center; vertical-align: top;">${item.period || ''}</td>
+                        <td style="padding: 8px; border-right: 1px solid #eee; text-align: center; vertical-align: top;">${item.days || ''}</td>
+                        <td style="padding: 8px; border-right: 1px solid #eee; text-align: center; vertical-align: top;">${item.interest_rate || ''}</td>
+                        <td style="padding: 8px; border-right: 1px solid #eee; text-align: center; vertical-align: top;">${item.due_date || ''}</td>
+                        <td style="padding: 8px; border-right: 1px solid #eee; text-align: right; vertical-align: top;">${formatCurrency(item.principal)}</td>
+                        <td style="padding: 8px; text-align: right; vertical-align: top;">${formatCurrency(item.amount_due)}</td>
+                    </tr>
+                `).join('');
+
+                // Render Page with A4 Effect
+                const pageHtml = `
+                <div class="document-page mx-auto bg-white transition-transform duration-300 hover:scale-[1.01] origin-top" style="width: 210mm; min-height: 297mm; padding: 15mm; position: relative; color: #1e293b; box-sizing: border-box; box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15); margin-bottom: 3rem; border-radius: 4px;">
+                    <!-- Watermark/Header Decoration -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: linear-gradient(90deg, #002d63 0%, #0056b3 100%); opacity: 0.8;"></div>
+
+                    <!-- Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <!-- Mock TTB Logo -->
+                            <div style="display: flex; align-items: center;">
+                                <svg style="width: 48px; height: 48px; color: #002d63;" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                                </svg>
+                                <div style="margin-left: 10px;">
+                                    <h1 style="font-size: 28px; font-weight: 800; color: #002d63; margin: 0; line-height: 0.9;">ttb</h1>
+                                    <p style="font-size: 11px; color: #002d63; margin: 0; font-weight: 500;">ทีเอ็มบีธนชาต</p>
+                                    <p style="font-size: 9px; color: #64748b; margin: 0;">TMBThanachart</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: right; font-size: 11px; color: #64748b;">
+                            <span style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-weight: 600;">หน้า ${pageNum} / ${analysis.summary ? analysis.summary.total_pdf_pages : totalPages}</span>
+                        </div>
+                    </div>
+
+                    <!-- Bill Info Group -->
+                    <div style="display: flex; gap: 30px; margin-bottom: 25px; font-size: 11px; border-bottom: 2px solid #f1f5f9; padding-bottom: 20px;">
+                        <div style="flex: 1;">
+                            <p style="font-weight: 700; font-size: 14px; margin-bottom: 10px; color: #002d63; text-transform: uppercase;">Bill For Collection</p>
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="width: 80px; vertical-align: top; padding-bottom: 6px; color: #64748b;">ชื่อลูกค้า</td>
+                                    <td style="vertical-align: top; padding-bottom: 6px; font-weight: 600;">${bill.customer_name || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="vertical-align: top; padding-bottom: 6px; color: #64748b;">ที่อยู่</td>
+                                    <td style="vertical-align: top; padding-bottom: 6px;">${bill.address || '-'} <br> ${bill.Address_Line2 || ''}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div style="width: 220px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                            <table style="width: 100%; text-align: right;">
+                                <tr>
+                                    <td style="padding-bottom: 4px; color: #64748b;">เลขที่ Bill</td>
+                                    <td style="font-weight: bold; padding-bottom: 4px; color: #002d63;">${bill.bill_number || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-bottom: 4px; color: #64748b;">วันที่</td>
+                                    <td style="padding-bottom: 4px;">${bill.date || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-bottom: 4px; color: #64748b;">Credit Line</td>
+                                    <td style="padding-bottom: 4px; font-family: monospace;">${bill.credit_line_no || '-'}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Items Table -->
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 20px;">
+                        <thead style="background-color: #f1f5f9; color: #475569;">
+                            <tr style="border-bottom: 2px solid #e2e8f0;">
+                                <th style="padding: 8px; text-align: left; font-weight: 600;">เลขตัวถัง/ทะเบียน</th>
+                                <th style="padding: 8px; text-align: left; font-weight: 600;">รายการ</th>
+                                <th style="padding: 8px; text-align: center; font-weight: 600;">ระยะเวลา</th>
+                                <th style="padding: 8px; text-align: center; font-weight: 600;">วัน</th>
+                                <th style="padding: 8px; text-align: center; font-weight: 600;">ดอกเบี้ย</th>
+                                <th style="padding: 8px; text-align: center; font-weight: 600;">ครบกำหนด</th>
+                                <th style="padding: 8px; text-align: right; font-weight: 600;">เงินต้น</th>
+                                <th style="padding: 8px; text-align: right; font-weight: 600;">ยอดชำระ</th>
+                            </tr>
+                        </thead>
+                        <tbody style="border-bottom: 2px solid #e2e8f0;">
+                            ${itemRows}
+                        </tbody>
+                        ${isLastPage ? `
+                        <tfoot>
+                            <tr>
+                                <td colspan="7" style="padding: 12px; text-align: right; font-weight: bold; color: #1e293b;">รวมยอดเงินที่ต้องชำระสุทธิ</td>
+                                <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 12px; color: #002d63; background: #f8fafc;">${formatCurrency(analysis.summary ? analysis.summary.total_amount : 0)}</td>
+                            </tr>
+                        </tfoot>
+                        ` : ''}
+                    </table>
+                    
+                    ${isLastPage ? `
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 11px; border: 1px solid #e2e8f0; display: inline-block;">
+                        <span style="color: #64748b; margin-right: 8px;">จำนวนเงินตัวอักษร:</span>
+                        <strong style="color: #0f172a;">${analysis.summary ? analysis.summary.total_amount_text : '-'}</strong>
+                    </div>
+                    ` : ''}
+
+                    <!-- Page Footer Decor -->
+                    <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; border-top: 1px solid #e2e8f0; padding-top: 10px; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8;">
+                        <span>Generated by ScannerTTB AI</span>
+                        <span>${new Date().toLocaleDateString('th-TH')}</span>
+                    </div>
+                </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', pageHtml);
+            });
+        }
+
+        function renderTable(items) {
+            const container = document.getElementById('itemsByPageContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // Populate Page Filter dynamically
+            const pageFilter = document.getElementById('pageFilter');
+            if (pageFilter) {
+                const currentVal = pageFilter.value;
+                // Keep 'all' option
+                pageFilter.innerHTML = '<option value="all">ทุกหน้า</option>';
+
+                // Get unique pages
+                const uniquePages = [...new Set(items.map(i => String(i.page_number || '1')))].sort((a, b) => parseInt(a) - parseInt(b));
+
+                uniquePages.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p;
+                    opt.textContent = `หน้า ${p}`;
+                    pageFilter.appendChild(opt);
+                });
+
+                // Restore selection if valid, else all
+                if (uniquePages.includes(currentVal)) {
+                    pageFilter.value = currentVal;
+                } else {
+                    pageFilter.value = 'all';
+                }
+            }
+
+            // Group by Page
+            const pages = {};
+            items.forEach(item => {
+                const p = String(item.page_number || 'Other');
+                if (!pages[p]) pages[p] = [];
+                pages[p].push(item);
+            });
+
+            // Sort Pages
+            const sortedPages = Object.keys(pages).sort((a, b) => {
+                const numA = parseInt(a);
+                const numB = parseInt(b);
+                if (isNaN(numA)) return 1;
+                if (isNaN(numB)) return -1;
+                return numA - numB;
+            });
+
+            sortedPages.forEach(page => {
+                const groupItems = pages[page];
+
+                // Create Group Card
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'card-white rounded-xl border border-slate-200 shadow-sm overflow-hidden page-group';
+                groupDiv.dataset.page = page;
+
+                // Create Header
+                const headerHTML = `
+                    <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500 text-white flex items-center justify-center font-bold shadow-sm">${page}</div>
+                            <span class="text-slate-700 font-bold">รายการในหน้าที่ ${page}</span>
+                            <span class="text-xs bg-white border border-slate-200 text-slate-500 px-2 py-0.5 rounded-full shadow-sm">${groupItems.length} รายการ</span>
+                        </div>
+                    </div>
+                `;
+
+                // Create Table
+                let tableHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 uppercase bg-white border-b border-slate-100">
+                                <tr>
+                                    <th class="px-6 py-3 font-semibold">ลำดับ</th>
+                                    <th class="px-6 py-3 font-semibold">เลขตัวถัง</th>
+                                    <th class="px-6 py-3 font-semibold">รายการ</th>
+                                    <th class="px-6 py-3 font-semibold text-center">ระยะเวลา</th>
+                                    <th class="px-6 py-3 font-semibold text-center">สถานะ</th>
+                                    <th class="px-6 py-3 font-semibold text-center">วัน</th>
+                                    <th class="px-6 py-3 font-semibold text-center">อัตราดอกเบี้ย</th>
+                                    <th class="px-6 py-3 font-semibold text-center">ครบกำหนด</th>
+                                    <th class="px-6 py-3 font-semibold text-right">เงินต้น</th>
+                                    <th class="px-6 py-3 font-semibold text-right">ยอดชำระ</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                `;
+
+                // Rows
+                groupItems.forEach((item, idx) => {
+                    const status = item.status || 'Active';
+                    const statusClass = status === 'Closed'
+                        ? 'bg-red-50 text-red-600 border border-red-100'
+                        : 'bg-emerald-50 text-emerald-600 border border-emerald-100';
+
+                    const searchStr = (item.chassis_number + ' ' + item.description).toLowerCase();
+
+                    tableHTML += `
+                        <tr class="hover:bg-slate-50 transition-colors item-row" 
+                            data-page="${page}" 
+                            data-status="${status}" 
+                            data-search="${searchStr}">
+                            <td class="px-6 py-3 text-slate-400 font-mono">${idx + 1}</td>
+                            <td class="px-6 py-3 font-medium text-slate-700 font-mono">${item.chassis_number || '-'}</td>
+                            <td class="px-6 py-3 text-slate-600">${item.description || '-'}</td>
+                            <td class="px-6 py-3 text-center text-slate-500 font-mono text-xs">${item.period || '-'}</td>
+                            <td class="px-6 py-3 text-center"><span class="px-2 py-0.5 rounded text-xs font-semibold ${statusClass}">${status}</span></td>
+                            <td class="px-6 py-3 text-center text-slate-500">${item.days || '-'}</td>
+                            <td class="px-6 py-3 text-center text-slate-500">${item.interest_rate || '-'}</td>
+                            <td class="px-6 py-3 text-center text-slate-500">${item.due_date || '-'}</td>
+                            <td class="px-6 py-3 text-right font-mono text-slate-500 text-xs">${formatCurrency(item.principal)}</td>
+                            <td class="px-6 py-3 text-right font-mono font-bold text-slate-700">${formatCurrency(item.amount_due)}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHTML += `</tbody></table></div>`;
+
+                groupDiv.innerHTML = headerHTML + tableHTML;
+                container.appendChild(groupDiv);
+            });
+
+            updateCounter(items.length);
+        }
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const pFilter = document.getElementById('pageFilter').value;
+            const sFilter = document.getElementById('statusFilter').value;
+
+            let visibleCount = 0;
+
+            // 1. Filter Rows
+            document.querySelectorAll('.item-row').forEach(row => {
+                const text = row.dataset.search;
+                const page = row.dataset.page;
+                const status = row.dataset.status;
+
+                const matchSearch = !search || text.includes(search);
+                const matchPage = pFilter === 'all' || page === pFilter;
+                const matchStatus = sFilter === 'all' || status === sFilter;
+
+                if (matchSearch && matchPage && matchStatus) {
+                    row.style.display = 'table-row';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // 2. Hide Empty Groups
+            document.querySelectorAll('.page-group').forEach(group => {
+                const groupHasVisible = group.querySelector('.item-row:not([style*="display: none"])');
+
+                // Also hide group if page filter mismatch (Group Level Optimization)
+                const groupPage = group.dataset.page;
+                const matchGroupPage = pFilter === 'all' || groupPage === pFilter;
+
+                if (groupHasVisible && matchGroupPage) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+
+            updateCounter(visibleCount);
+        }
+
+        function updateCounter(count) {
+            const cnt = document.getElementById('showingCount');
+            if (cnt) cnt.textContent = count;
+        }
+
+
+
+        // Populate export page filter
+        function updateExportPageFilter(pages) {
+            const sel = document.getElementById('exportPageFilter');
+            sel.innerHTML = '<option value="all">Export ทุกหน้า</option>';
+            pages.forEach(p => {
+                sel.innerHTML += `<option value="${p}">หน้า ${p}</option>`;
+            });
+        }
+
+        function exportToExcel() {
+            if (!analysisData || !analysisData.analysis || !analysisData.analysis.items) {
+                alert('ไม่มีข้อมูลสำหรับ Export');
+                return;
+            }
+
+            // Use 'pageFilter' instead of 'exportPageFilter' which was missing
+            const pageFilter = document.getElementById('pageFilter');
+            const exportPage = pageFilter ? pageFilter.value : 'all';
+
+            const items = analysisData.analysis.items;
+            const billInfo = analysisData.analysis.bill_info || {};
+
+            // Filter items by selected page
+            let filteredItems = items;
+            if (exportPage !== 'all') {
+                filteredItems = items.filter(item => String(item.page_number || 1) === exportPage);
+            }
+
+            if (filteredItems.length === 0) {
+                alert('ไม่พบข้อมูลสำหรับหน้าที่เลือก');
+                return;
+            }
+
+            // Build worksheet data (Updated ID to ลำดับ)
+            const wsData = [
+                ['ลำดับ', 'เลขตัวถัง/เลขทะเบียน', 'รายการ', 'สถานะ', 'ระยะเวลา', 'วัน', 'อัตราดอกเบี้ย', 'วันครบกำหนด', 'ต้นเงินกู้/เงินต้นคงเหลือ', 'จำนวนเงินที่ต้องชำระ', 'หน้า PDF']
+            ];
+
+            filteredItems.forEach((item, idx) => {
+                const principal = parseFloat((item.principal || '0').toString().replace(/,/g, ''));
+                const amountDue = parseFloat((item.amount_due || '0').toString().replace(/,/g, ''));
+                wsData.push([
+                    idx + 1,
+                    item.chassis_number || '',
+                    item.description || 'ดอกเบี้ย',
+                    item.status || 'Active',
+                    item.period || '',
+                    item.days || '',
+                    item.interest_rate || '',
+                    item.due_date || '',
+                    isNaN(principal) ? 0 : principal,
+                    isNaN(amountDue) ? 0 : amountDue,
+                    item.page_number || 1
+                ]);
+            });
+
+            // Calculate total
+            let total = 0;
+            filteredItems.forEach(item => {
+                try { total += parseFloat((item.amount_due || '0').toString().replace(/,/g, '')); } catch (e) { }
+            });
+            wsData.push([]);
+            wsData.push(['', '', '', '', '', '', '', '', 'ยอดรวม', total]);
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 8 }, { wch: 28 }, { wch: 10 }, { wch: 8 }, { wch: 22 }, { wch: 6 }, { wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 8 }
+            ];
+
+            const wb = XLSX.utils.book_new();
+            const sheetName = exportPage === 'all' ? 'ทุกหน้า' : `หน้า ${exportPage}`;
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+            // Generate filename
+            const billNum = billInfo.bill_number || 'export';
+            const pageLabel = exportPage === 'all' ? 'all_pages' : `page_${exportPage}`;
+            const fileName = `BillForCollection_${billNum}_${pageLabel}.xlsx`;
+
+            XLSX.writeFile(wb, fileName);
+        }
+
+
+
+        async function importToDatabase() {
+            if (!analysisData) return;
+
+            const btn = document.getElementById('importBtn');
+            const originalHTML = btn.innerHTML;
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `
+                    <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    กำลังบันทึก...
+                `;
+
+                const response = await fetch('/api/import-db', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(analysisData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    btn.classList.add('bg-emerald-600');
+                    btn.innerHTML = `
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        บันทึกสำเร็จ
+                    `;
+                    alert('บันทึกข้อมูลเข้า ScannerDB สำเร็จแล้ว!');
+                } else {
+                    throw new Error(result.detail || 'เกิดข้อผิดพลาดในการบันทึก');
+                }
+            } catch (error) {
+                console.error('Import Error:', error);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+
+        function formatCurrency(value) {
+            if (!value && value !== 0) return '-';
+            const num = parseFloat(value.toString().replace(/,/g, ''));
+            if (isNaN(num)) return value;
+            return new Intl.NumberFormat('th-TH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(num);
+        }
+
+        // Efficient Tab Switching with Animation
+        function switchTab(tabId) {
+            // Update Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tabId) {
+                    btn.setAttribute('data-active', 'true');
+                } else {
+                    btn.setAttribute('data-active', 'false');
+                }
+            });
+
+            // Hide all tabs first
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('show-tab');
+                setTimeout(() => {
+                    if (!el.classList.contains('show-tab')) {
+                        el.classList.remove('active-tab');
+                    }
+                }, 300); // Wait for fade out
+            });
+
+            // Show New Tab
+            const target = document.getElementById('tab-' + tabId);
+            if (target) {
+                // Remove from others immediately to prevent overlap layout issues?
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active-tab'));
+
+                target.classList.add('active-tab');
+                // Trigger Reflow
+                void target.offsetWidth;
+                target.classList.add('show-tab');
+
+                // Trigger Animation for specific tabs
+                if (tabId === 'verification') {
+                    requestAnimationFrame(() => {
+                        animateVerificationRing();
+                    });
+                }
+            }
+        }
+
+        // Animation for Verification Ring
+        function animateVerificationRing() {
+            if (!analysisData || !analysisData.analysis || !analysisData.analysis.verification) return;
+
+            const completeness = analysisData.analysis.verification.data_completeness || '0';
+            const targetPercent = parseFloat(completeness.toString().replace('%', ''));
+            const circle = document.getElementById('scoreRing');
+            const percentText = document.getElementById('completenessPercent');
+
+            if (circle && percentText) {
+                // Reset to 0 state immediately
+                const radius = circle.r.baseVal.value;
+                const circumference = 2 * Math.PI * radius;
+
+                circle.style.transition = 'none';
+                circle.style.strokeDashoffset = circumference;
+                percentText.textContent = '0%';
+
+                // Start Animation
+                setTimeout(() => {
+                    circle.style.transition = 'stroke-dashoffset 1s ease-out';
+                    const offset = circumference - (targetPercent / 100) * circumference;
+                    circle.style.strokeDashoffset = offset;
+
+                    // Animate Text Counter using requestAnimationFrame for smoothness
+                    const duration = 1000;
+                    const startTime = performance.now();
+
+                    function update(currentTime) {
+                        const elapsed = currentTime - startTime;
+                        const progress = Math.min(elapsed / duration, 1);
+
+                        // Cubic Ease Out
+                        const ease = 1 - Math.pow(1 - progress, 3);
+
+                        const currentVal = Math.floor(ease * targetPercent);
+                        percentText.textContent = currentVal + '%';
+
+                        if (progress < 1) {
+                            requestAnimationFrame(update);
+                        } else {
+                            percentText.textContent = targetPercent + '%';
+                        }
+                    }
+                    requestAnimationFrame(update);
+
+                }, 50);
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('errorSection').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function resetAll() {
+            selectedFile = null;
+            analysisData = null;
+
+            // Helper to safe update
+            const safeClassRemove = (id, cls) => { const el = document.getElementById(id); if (el) el.classList.remove(cls); };
+            const safeClassAdd = (id, cls) => { const el = document.getElementById(id); if (el) el.classList.add(cls); };
+
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) fileInput.value = '';
+
+            safeClassRemove('uploadText', 'hidden');
+            safeClassRemove('uploadIcon', 'hidden');
+            safeClassAdd('fileInfo', 'hidden');
+            safeClassAdd('optionsSection', 'hidden');
+
+            const scanBtn = document.getElementById('scanBtn');
+            if (scanBtn) scanBtn.disabled = true;
+
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) progressBar.style.width = '0%';
+
+            const maxPages = document.getElementById('maxPages');
+            if (maxPages) maxPages.value = '';
+
+            const pdfPassword = document.getElementById('pdfPassword');
+            if (pdfPassword) {
+                pdfPassword.value = '';
+                pdfPassword.classList.remove('border-red-500');
+            }
+
+            safeClassAdd('passwordSection', 'hidden');
+            const pwSection = document.getElementById('passwordSection');
+            if (pwSection) {
+                pwSection.classList.remove('border-red-500');
+                pwSection.classList.add('border-amber-200');
+            }
+
+            const pwLabel = document.getElementById('passwordLabel');
+            if (pwLabel) pwLabel.textContent = 'ไฟล์นี้มีรหัสผ่าน กรุณาใส่รหัสผ่าน';
+
+            const pwHint = document.getElementById('passwordHint');
+            if (pwHint) pwHint.textContent = 'กรุณาใส่รหัสผ่านเพื่อเปิดไฟล์ PDF นี้';
+
+            const pwErr = document.getElementById('passwordError');
+            if (pwErr) pwErr.remove();
+
+            safeClassRemove('uploadSection', 'hidden');
+            safeClassAdd('loadingSection', 'hidden');
+            safeClassAdd('resultsSection', 'hidden');
+            safeClassAdd('errorSection', 'hidden');
+
+            // Reset to first tab
+            switchTab('overview');
+        }
+    </script>
+</body>
+
+</html>

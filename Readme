@@ -1,0 +1,44 @@
+เปิดหน้าเว็บไซด์
+http://localhost:8000
+
+เปิด Backend
+cd ".\ScannerTTB (2)"
+pip install -r requirements.txt
+python app.py
+
+หมายเหตุ: โปรเจกต์นี้รวมฟีเจอร์จาก OCR_OMODA แล้ว (Tax Invoice OCR, Export Word/Excel, Import DB)
+สามารถลบโฟลเดอร์ OCR_OMODA ได้หากไม่ได้ใช้งานแล้ว
+
+เปิดBackend
+python app.py
+
+
+002034
+
+
+-- 1. ลบข้อมูลในตารางรายการ (ลูก)
+DELETE FROM dbo.BillItems;
+
+-- 2. ลบข้อมูลในตารางการตรวจสอบ (ลูก)
+DELETE FROM dbo.Verifications;
+
+-- 3. ลบข้อมูลในตารางบิล (หลัก)
+DELETE FROM dbo.Bills;
+
+-- ล้างข้อมูลและรีเซ็ตตัวนับ ID
+TRUNCATE TABLE dbo.BillItems;
+TRUNCATE TABLE dbo.Verifications;
+
+-- สำหรับตาราง Bills ถ้ามี Foreign Key อ้างอิงอยู่จะใช้ TRUNCATE ไม่ได้ 
+-- ให้ใช้ DELETE แล้วตามด้วยคำสั่งรีเซ็ต ID ด้านล่างนี้ครับ:
+DELETE FROM dbo.Bills;
+DBCC CHECKIDENT ('dbo.Bills', RESEED, 0);
+
+
+cd "C:\Users\Asus\OneDrive\Desktop\เอกสหกรุ๊ป\ScannerTTB\ScannerTTB (2)"
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/WilliamJasper/ScannerTTB.git
+git push -u origin main
